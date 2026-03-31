@@ -1,0 +1,1180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bayesian Networks — Lecture Worksheet</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --ink: #1a1a2e;
+    --ink2: #3d3d5c;
+    --ink3: #7a7a9a;
+    --paper: #faf9f6;
+    --paper2: #f2f0ea;
+    --paper3: #e8e4d9;
+    --accent: #c84b31;
+    --accent2: #e8784a;
+    --blue: #2d6a8f;
+    --blue2: #d0e8f5;
+    --green: #2d7a4f;
+    --green2: #d0f0e0;
+    --amber: #b8760a;
+    --amber2: #fef3d0;
+    --rule: #d0cdc4;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  html { font-size: 16px; }
+  body {
+    font-family: 'DM Sans', sans-serif;
+    background: var(--paper);
+    color: var(--ink);
+    line-height: 1.7;
+    padding: 0;
+  }
+
+  /* ── HEADER ── */
+  .header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 48px 60px 36px;
+    position: relative;
+    overflow: hidden;
+  }
+  .header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: rgba(200,75,49,0.12);
+  }
+  .header-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--accent2);
+    margin-bottom: 10px;
+  }
+  .header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 42px;
+    line-height: 1.15;
+    margin-bottom: 8px;
+    font-weight: 400;
+  }
+  .header-sub {
+    font-size: 15px;
+    color: rgba(250,249,246,0.55);
+    font-weight: 300;
+  }
+  .header-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 24px;
+    padding-top: 20px;
+    border-top: 1px solid rgba(255,255,255,0.12);
+    font-size: 12px;
+    color: rgba(250,249,246,0.45);
+    font-family: 'DM Mono', monospace;
+  }
+
+  /* ── PROGRESS BAR ── */
+  .progress-bar {
+    height: 4px;
+    background: var(--paper3);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .progress-fill {
+    height: 100%;
+    background: var(--accent);
+    width: 0%;
+    transition: width 0.4s ease;
+  }
+
+  /* ── MAIN LAYOUT ── */
+  .container { max-width: 860px; margin: 0 auto; padding: 48px 40px; }
+
+  /* ── SECTION HEADER ── */
+  .section-header {
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+    margin: 48px 0 20px;
+    padding-bottom: 10px;
+    border-bottom: 1.5px solid var(--ink);
+  }
+  .section-num {
+    font-family: 'DM Serif Display', serif;
+    font-size: 48px;
+    color: var(--paper3);
+    line-height: 1;
+    font-weight: 400;
+    min-width: 40px;
+  }
+  .section-title {
+    font-family: 'DM Serif Display', serif;
+    font-size: 26px;
+    font-weight: 400;
+  }
+  .section-tag {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-weight: 500;
+  }
+  .tag-read { background: var(--blue2); color: var(--blue); }
+  .tag-discuss { background: var(--amber2); color: var(--amber); }
+  .tag-solve { background: var(--green2); color: var(--green); }
+
+  /* ── CONCEPT BLOCK ── */
+  .concept {
+    background: white;
+    border: 1px solid var(--rule);
+    border-left: 4px solid var(--blue);
+    border-radius: 2px;
+    padding: 20px 24px;
+    margin-bottom: 16px;
+  }
+  .concept-title {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 8px;
+    font-weight: 500;
+  }
+  .concept p { font-size: 14px; color: var(--ink2); line-height: 1.75; }
+  .concept p + p { margin-top: 8px; }
+
+  /* ── KEY RULE BOX ── */
+  .rule-box {
+    background: var(--amber2);
+    border: 1px solid #e8c84a;
+    border-radius: 4px;
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 13.5px;
+    color: var(--ink);
+  }
+  .rule-box strong { color: var(--amber); }
+
+  /* ── DIAGRAMS (SVG wrappers) ── */
+  .diagram-wrap {
+    background: var(--paper2);
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    padding: 24px;
+    margin: 16px 0;
+    text-align: center;
+  }
+  .diagram-wrap svg { overflow: visible; }
+
+  /* ── DISCUSSION PROMPTS ── */
+  .discuss-block {
+    margin: 20px 0;
+  }
+  .discuss-prompt {
+    display: flex;
+    gap: 12px;
+    align-items: flex-start;
+    padding: 12px 16px;
+    border-radius: 4px;
+    background: var(--amber2);
+    border: 1px solid #e8c84a;
+    margin-bottom: 10px;
+    font-size: 14px;
+    cursor: pointer;
+    transition: background 0.15s;
+  }
+  .discuss-prompt:hover { background: #fde97a33; }
+  .discuss-icon {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    background: var(--amber);
+    color: white;
+    padding: 1px 6px;
+    border-radius: 2px;
+    flex-shrink: 0;
+    margin-top: 2px;
+    font-weight: 500;
+  }
+  .discuss-answer {
+    display: none;
+    padding: 12px 16px;
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    font-size: 13.5px;
+    color: var(--ink2);
+    line-height: 1.7;
+    margin-top: -6px;
+    margin-bottom: 10px;
+  }
+  .discuss-answer.open { display: block; }
+  .discuss-answer strong { color: var(--ink); }
+
+  /* ── EXERCISE BLOCKS ── */
+  .exercise {
+    background: white;
+    border: 1px solid var(--rule);
+    border-radius: 4px;
+    margin: 20px 0;
+    overflow: hidden;
+  }
+  .exercise-header {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 10px 18px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .ex-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    color: var(--accent2);
+    letter-spacing: 1px;
+  }
+  .ex-title { font-size: 14px; font-weight: 500; }
+  .ex-diff {
+    margin-left: auto;
+    font-family: 'DM Mono', monospace;
+    font-size: 10px;
+    padding: 2px 7px;
+    border-radius: 2px;
+  }
+  .diff-easy { background: rgba(45,122,79,0.3); color: #7debb0; }
+  .diff-med { background: rgba(184,118,10,0.3); color: #f0c060; }
+  .diff-hard { background: rgba(200,75,49,0.3); color: #f09070; }
+
+  .exercise-body { padding: 18px 20px; }
+  .exercise-body p { font-size: 14px; color: var(--ink2); margin-bottom: 12px; }
+
+  /* network display inside exercise */
+  .net-display {
+    background: var(--paper2);
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 16px;
+    margin: 12px 0;
+    text-align: center;
+  }
+
+  /* answer input */
+  .answer-area {
+    margin: 12px 0 0;
+  }
+  .answer-label {
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    color: var(--ink3);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+  .answer-options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin: 8px 0;
+  }
+  .opt-btn {
+    padding: 8px 18px;
+    border: 1.5px solid var(--rule);
+    border-radius: 3px;
+    background: white;
+    font-size: 13px;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    color: var(--ink);
+    font-weight: 500;
+  }
+  .opt-btn:hover { border-color: var(--ink3); background: var(--paper2); }
+  .opt-btn.selected-correct { background: var(--green2); border-color: var(--green); color: var(--green); }
+  .opt-btn.selected-wrong { background: #fde0d8; border-color: var(--accent); color: var(--accent); }
+  .opt-btn.reveal-correct { background: var(--green2); border-color: var(--green); color: var(--green); }
+
+  .feedback {
+    display: none;
+    padding: 10px 14px;
+    border-radius: 3px;
+    font-size: 13px;
+    margin-top: 8px;
+    line-height: 1.6;
+  }
+  .feedback.show { display: block; }
+  .feedback.correct { background: var(--green2); border: 1px solid var(--green); color: var(--green); }
+  .feedback.wrong { background: #fde0d8; border: 1px solid var(--accent); color: var(--accent); }
+
+  /* open text answer */
+  .open-answer {
+    width: 100%;
+    min-height: 80px;
+    border: 1px solid var(--rule);
+    border-radius: 3px;
+    padding: 10px 12px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 13.5px;
+    color: var(--ink);
+    background: var(--paper);
+    resize: vertical;
+    transition: border 0.15s;
+    margin-top: 6px;
+  }
+  .open-answer:focus { outline: none; border-color: var(--blue); }
+
+  .reveal-btn {
+    margin-top: 10px;
+    padding: 8px 16px;
+    background: transparent;
+    border: 1.5px solid var(--ink3);
+    border-radius: 3px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    cursor: pointer;
+    color: var(--ink3);
+    text-transform: uppercase;
+    transition: all 0.15s;
+  }
+  .reveal-btn:hover { border-color: var(--ink); color: var(--ink); }
+
+  .model-answer {
+    display: none;
+    margin-top: 10px;
+    padding: 12px 16px;
+    background: var(--paper2);
+    border-left: 3px solid var(--blue);
+    border-radius: 0 3px 3px 0;
+    font-size: 13px;
+    color: var(--ink2);
+    line-height: 1.7;
+  }
+  .model-answer.show { display: block; }
+  .model-answer strong { color: var(--ink); }
+
+  /* ── SCORE TRACKER ── */
+  .score-panel {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    background: var(--ink);
+    color: var(--paper);
+    border-radius: 6px;
+    padding: 12px 18px;
+    font-family: 'DM Mono', monospace;
+    font-size: 12px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    z-index: 200;
+    min-width: 120px;
+  }
+  .score-label { color: rgba(250,249,246,0.45); font-size: 10px; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 4px; }
+  .score-val { font-size: 22px; font-weight: 500; color: var(--accent2); }
+  .score-sub { font-size: 10px; color: rgba(250,249,246,0.35); margin-top: 2px; }
+
+  /* ── PATH TABLE ── */
+  .path-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  .path-table th {
+    background: var(--ink);
+    color: var(--paper);
+    padding: 8px 12px;
+    text-align: left;
+    font-weight: 500;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+  }
+  .path-table td { padding: 8px 12px; border-bottom: 1px solid var(--rule); color: var(--ink2); vertical-align: top; }
+  .path-table tr:last-child td { border-bottom: none; }
+  .path-table tr:nth-child(even) td { background: var(--paper2); }
+  .mono { font-family: 'DM Mono', monospace; font-size: 12px; }
+
+  /* ── FOOTER ── */
+  .footer {
+    background: var(--ink);
+    color: rgba(250,249,246,0.35);
+    text-align: center;
+    padding: 24px;
+    font-family: 'DM Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    margin-top: 60px;
+  }
+
+  /* ── SUMMARY TABLE ── */
+  .summary-table { width: 100%; border-collapse: collapse; font-size: 13px; margin: 12px 0; }
+  .summary-table th { background: var(--ink); color: var(--paper); padding: 10px 14px; text-align: left; font-weight: 500; }
+  .summary-table td { padding: 10px 14px; border-bottom: 1px solid var(--rule); }
+  .summary-table tr:nth-child(even) td { background: var(--paper2); }
+  .chip { display: inline-block; padding: 2px 8px; border-radius: 2px; font-size: 11px; font-weight: 500; font-family: 'DM Mono', monospace; }
+  .chip-open { background: var(--green2); color: var(--green); }
+  .chip-block { background: #fde0d8; color: var(--accent); }
+
+  hr.divider { border: none; border-top: 1px solid var(--rule); margin: 32px 0; }
+
+  @media print {
+    .score-panel { display: none; }
+    .progress-bar { display: none; }
+    .header { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  }
+</style>
+</head>
+<body>
+
+<!-- PROGRESS -->
+<div class="progress-bar"><div class="progress-fill" id="progress"></div></div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-label">Advanced Machine Learning · Lecture Worksheet</div>
+  <h1>Bayesian Networks<br><em style="font-style:italic;color:var(--accent2)">& Probabilistic Reasoning</em></h1>
+  <div class="header-sub">Conditional Independence · Fundamental Structures · d-Separation</div>
+  <div class="header-meta">
+    <span>BY SANCHIT, SHOBHIT &amp; RISHABH</span>
+    <span>·</span>
+    <span>RECAP + 3 SECTIONS · 8 EXERCISES</span>
+    <span>·</span>
+    <span>READ → DISCUSS → SOLVE</span>
+  </div>
+</div>
+
+<div class="container">
+
+<!-- ══════════════════════════════════════════════
+     RECAP
+══════════════════════════════════════════════ -->
+<div class="section-header">
+  <span class="section-num" style="color:var(--accent2);font-size:36px">↩</span>
+  <span class="section-title">Quick Recap</span>
+  <span class="section-tag" style="background:#f2ede8;color:var(--ink3);border:1px solid var(--rule)">From Last Lecture</span>
+</div>
+
+<p style="font-size:14px;color:var(--ink2);margin-bottom:18px">Before we start — make sure these ideas from the previous lectures are solid. Everything in today's worksheet builds on them.</p>
+
+<!-- Recap cards grid -->
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:20px">
+
+  <div style="background:white;border:1px solid var(--rule);border-top:3px solid var(--blue);border-radius:3px;padding:16px 18px">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);margin-bottom:8px">What is a Bayesian Network?</div>
+    <p style="font-size:13px;color:var(--ink2);line-height:1.7">A <strong>directed acyclic graph (DAG)</strong> where each node is a random variable and each edge represents a direct probabilistic influence. The graph encodes conditional independence assumptions — it tells us which variables are relevant to each other and which are not.</p>
+  </div>
+
+  <div style="background:white;border:1px solid var(--rule);border-top:3px solid var(--blue);border-radius:3px;padding:16px 18px">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--blue);margin-bottom:8px">Conditional Probability Tables (CPTs)</div>
+    <p style="font-size:13px;color:var(--ink2);line-height:1.7">Every node X stores a <strong>CPT</strong>: P(X | Par(X)). For a root node (no parents) this is just a prior P(X). The CPT tells you the probability of X for every combination of its parent values.</p>
+  </div>
+
+  <div style="background:white;border:1px solid var(--rule);border-top:3px solid var(--accent);border-radius:3px;padding:16px 18px">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Joint Probability Factorisation</div>
+    <p style="font-size:13px;color:var(--ink2);line-height:1.7">The full joint distribution factorises as a product over all nodes:</p>
+    <div style="font-family:'DM Mono',monospace;font-size:12px;background:var(--paper2);padding:8px 10px;border-radius:3px;margin-top:8px;color:var(--ink)">P(X₁,…,Xₙ) = ∏ P(Xᵢ | Par(Xᵢ))</div>
+    <p style="font-size:12px;color:var(--ink3);margin-top:6px;line-height:1.5">This is what makes BNs compact — instead of storing 2ⁿ entries you store one small CPT per node.</p>
+  </div>
+
+  <div style="background:white;border:1px solid var(--rule);border-top:3px solid var(--accent);border-radius:3px;padding:16px 18px">
+    <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--accent);margin-bottom:8px">Bayes' Theorem</div>
+    <p style="font-size:13px;color:var(--ink2);line-height:1.7">The engine behind all inference in Bayesian Networks:</p>
+    <div style="font-family:'DM Mono',monospace;font-size:12px;background:var(--paper2);padding:8px 10px;border-radius:3px;margin-top:8px;color:var(--ink)">P(H|E) = P(E|H) · P(H) / P(E)</div>
+    <p style="font-size:12px;color:var(--ink3);margin-top:6px;line-height:1.5">Posterior = Likelihood × Prior / Evidence. We update belief in H after observing E.</p>
+  </div>
+
+</div>
+
+<!-- Local semantics recap -->
+<div style="background:white;border:1px solid var(--rule);border-left:4px solid var(--green);border-radius:2px;padding:16px 20px;margin-bottom:14px">
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--green);margin-bottom:8px">Local Semantics &amp; Markov Blanket</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px">
+    <div>
+      <p style="font-size:13px;color:var(--ink2);line-height:1.7"><strong>Local semantics:</strong> Each node X is conditionally independent of all its <em>non-descendants</em> given its parents. This is the core independence assumption baked into the graph structure.</p>
+    </div>
+    <div>
+      <p style="font-size:13px;color:var(--ink2);line-height:1.7"><strong>Markov Blanket</strong> of X = Parents ∪ Children ∪ Parents-of-Children. Given its Markov blanket, X is independent of every other node in the network.</p>
+      <div style="font-family:'DM Mono',monospace;font-size:11px;background:var(--paper2);padding:6px 10px;border-radius:3px;margin-top:6px;color:var(--ink)">MB(X) = Par(X) ∪ Child(X) ∪ Par(Child(X))</div>
+    </div>
+  </div>
+</div>
+
+<!-- Quick self-check -->
+<div style="background:var(--paper2);border:1px solid var(--rule);border-radius:4px;padding:16px 20px;margin-bottom:8px">
+  <div style="font-family:'DM Mono',monospace;font-size:10px;letter-spacing:1.5px;text-transform:uppercase;color:var(--ink3);margin-bottom:12px">Self-check — tick what you're confident on</div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:6px">
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);cursor:pointer"><input type="checkbox" style="accent-color:var(--blue)"> I can read a DAG and identify parents, children, descendants</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);cursor:pointer"><input type="checkbox" style="accent-color:var(--blue)"> I understand what a CPT stores and how to use it</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);cursor:pointer"><input type="checkbox" style="accent-color:var(--blue)"> I can write the joint factorisation for a small network</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);cursor:pointer"><input type="checkbox" style="accent-color:var(--blue)"> I can apply Bayes' theorem to compute a posterior</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);cursor:pointer"><input type="checkbox" style="accent-color:var(--blue)"> I know what the Markov blanket of a node is</label>
+    <label style="display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);cursor:pointer"><input type="checkbox" style="accent-color:var(--blue)"> I understand what conditional independence means</label>
+  </div>
+  <p style="font-size:12px;color:var(--ink3);margin-top:12px">If any box is unticked, flag it now — today's material depends on all of the above.</p>
+</div>
+
+<hr class="divider">
+
+<!-- ══════════════════════════════════════════════
+     SECTION 1 — CHAINS
+══════════════════════════════════════════════ -->
+<div class="section-header">
+  <span class="section-num">01</span>
+  <span class="section-title">Chains (Serial Connections)</span>
+  <span class="section-tag tag-read">Read First</span>
+</div>
+
+<div class="concept">
+  <div class="concept-title">What is a chain?</div>
+  <p>A chain is a linear path where information flows from one node to the next: <strong>A → B → C</strong>. The middle node B is neither a pure cause nor a pure effect — it sits in the middle, relaying influence from A to C.</p>
+  <p>Real example: <strong>Burglary → Alarm → MaryCalls</strong>. A burglary makes the alarm more likely; a ringing alarm makes Mary more likely to call. So burglary and Mary's call are related — not directly, but through the alarm.</p>
+</div>
+
+<div class="diagram-wrap">
+  <svg width="480" height="90" viewBox="0 0 480 90">
+    <defs>
+      <marker id="arr" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="#2d6a8f" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </marker>
+    </defs>
+    <rect x="10" y="22" width="110" height="40" rx="4" fill="#d0e8f5" stroke="#2d6a8f" stroke-width="1"/>
+    <text x="65" y="38" text-anchor="middle" font-family="DM Sans" font-size="13" font-weight="500" fill="#1a3d5c">Burglary</text>
+    <text x="65" y="54" text-anchor="middle" font-family="DM Sans" font-size="11" fill="#2d6a8f">cause</text>
+    <line x1="120" y1="42" x2="175" y2="42" stroke="#2d6a8f" stroke-width="1.5" marker-end="url(#arr)"/>
+    <rect x="178" y="22" width="110" height="40" rx="4" fill="#fef3d0" stroke="#b8760a" stroke-width="1.5" stroke-dasharray="4 2"/>
+    <text x="233" y="38" text-anchor="middle" font-family="DM Sans" font-size="13" font-weight="500" fill="#7a4a00">Alarm</text>
+    <text x="233" y="54" text-anchor="middle" font-family="DM Sans" font-size="11" fill="#b8760a">middle node</text>
+    <line x1="288" y1="42" x2="343" y2="42" stroke="#2d6a8f" stroke-width="1.5" marker-end="url(#arr)"/>
+    <rect x="346" y="22" width="120" height="40" rx="4" fill="#d0e8f5" stroke="#2d6a8f" stroke-width="1"/>
+    <text x="406" y="38" text-anchor="middle" font-family="DM Sans" font-size="13" font-weight="500" fill="#1a3d5c">MaryCalls</text>
+    <text x="406" y="54" text-anchor="middle" font-family="DM Sans" font-size="11" fill="#2d6a8f">effect</text>
+    <text x="240" y="82" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#7a7a9a">observe alarm → blocks the path</text>
+  </svg>
+</div>
+
+<div class="rule-box">
+  <strong>The Chain Rule:</strong> In A → B → C, information flows freely when B is <em>not</em> observed. Conditioning on B <strong>blocks</strong> the path — A and C become conditionally independent given B.
+  <br><br>
+  <span style="font-family:'DM Mono',monospace;font-size:12px">A ⊥⊥ C | B &nbsp;&nbsp; but &nbsp;&nbsp; A ⊬⊥ C (marginally)</span>
+</div>
+
+<div class="concept">
+  <div class="concept-title">Why does observing B block the path?</div>
+  <p>Once you <em>know</em> whether the alarm rang, the burglary cannot give you any new information about Mary's call. The alarm state is the only thing Mary's call-probability depends on. There is no "extra channel" left for burglary to influence Mary.</p>
+</div>
+
+<hr class="divider">
+<div class="section-header" style="margin-top:8px">
+  <span class="section-num" style="color:var(--paper3)">01</span>
+  <span class="section-title">Discuss</span>
+  <span class="section-tag tag-discuss">Class Discussion</span>
+</div>
+
+<div class="discuss-block">
+  <div class="discuss-prompt" onclick="toggleDiscuss('d1')">
+    <span class="discuss-icon">Q1</span>
+    <span>You know the alarm rang. Your friend tells you there was a burglary. Does this change how likely you think Mary called? Why or why not?</span>
+  </div>
+  <div class="discuss-answer" id="d1">
+    <strong>No.</strong> Once you know the alarm rang, you already have all the information that determines Mary's calling probability — specifically P(Mary | Alarm = true). Whether a burglary caused that alarm is irrelevant to Mary's decision to call; she only responds to the alarm itself. The burglary is "screened off" by the alarm.
+  </div>
+
+  <div class="discuss-prompt" onclick="toggleDiscuss('d2')">
+    <span class="discuss-icon">Q2</span>
+    <span>In a chain A → B → C → D, if you observe B, does that block information flow between A and D?</span>
+  </div>
+  <div class="discuss-answer" id="d2">
+    <strong>Yes.</strong> Observing B blocks the path at B. Since the only path from A to D passes through B, and B is observed and is a chain node, the entire path is blocked — regardless of what happens at C or D. A ⊥⊥ D | B. In general, one blocked node on a path is enough to block the whole path.
+  </div>
+</div>
+
+<hr class="divider">
+<div class="section-header" style="margin-top:8px">
+  <span class="section-num" style="color:var(--paper3)">01</span>
+  <span class="section-title">Exercises</span>
+  <span class="section-tag tag-solve">Solve</span>
+</div>
+
+<!-- Exercise 1 -->
+<div class="exercise">
+  <div class="exercise-header">
+    <span class="ex-num">EX 01</span>
+    <span class="ex-title">Chain independence check</span>
+    <span class="ex-diff diff-easy">EASY</span>
+  </div>
+  <div class="exercise-body">
+    <p>Consider the chain: <strong>Season → Sprinkler → WetGrass</strong></p>
+    <div class="net-display">
+      <svg width="400" height="70" viewBox="0 0 400 70">
+        <defs><marker id="a1" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a1a2e" stroke-width="1.5"/></marker></defs>
+        <rect x="10" y="15" width="90" height="36" rx="3" fill="#f2f0ea" stroke="#d0cdc4" stroke-width="1"/>
+        <text x="55" y="37" text-anchor="middle" font-family="DM Sans" font-size="12" fill="#1a1a2e">Season</text>
+        <line x1="100" y1="33" x2="145" y2="33" stroke="#1a1a2e" stroke-width="1.2" marker-end="url(#a1)"/>
+        <rect x="148" y="15" width="96" height="36" rx="3" fill="#fef3d0" stroke="#b8760a" stroke-width="1.2"/>
+        <text x="196" y="37" text-anchor="middle" font-family="DM Sans" font-size="12" fill="#1a1a2e">Sprinkler</text>
+        <line x1="244" y1="33" x2="289" y2="33" stroke="#1a1a2e" stroke-width="1.2" marker-end="url(#a1)"/>
+        <rect x="292" y="15" width="96" height="36" rx="3" fill="#f2f0ea" stroke="#d0cdc4" stroke-width="1"/>
+        <text x="340" y="37" text-anchor="middle" font-family="DM Sans" font-size="12" fill="#1a1a2e">WetGrass</text>
+      </svg>
+    </div>
+    <p>Which statement is correct?</p>
+    <div class="answer-area">
+      <div class="answer-options">
+        <button class="opt-btn" onclick="checkMCQ(this,'ex1','A')">A: Season ⊥⊥ WetGrass (always)</button>
+        <button class="opt-btn" onclick="checkMCQ(this,'ex1','B')">B: Season ⊥⊥ WetGrass | Sprinkler</button>
+        <button class="opt-btn" onclick="checkMCQ(this,'ex1','C')">C: Season ⊬⊥ WetGrass | Sprinkler</button>
+        <button class="opt-btn" onclick="checkMCQ(this,'ex1','D')">D: No independence holds</button>
+      </div>
+      <div class="feedback" id="fb-ex1"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Exercise 2 -->
+<div class="exercise">
+  <div class="exercise-header">
+    <span class="ex-num">EX 02</span>
+    <span class="ex-title">Extend the chain</span>
+    <span class="ex-diff diff-med">MEDIUM</span>
+  </div>
+  <div class="exercise-body">
+    <p>Now the chain is extended: <strong>Season → Sprinkler → WetGrass → SlipperyPath</strong></p>
+    <p>You observe <strong>WetGrass</strong>. Write down all the conditional independence relationships that now hold.</p>
+    <div class="answer-area">
+      <div class="answer-label">Your answer</div>
+      <textarea class="open-answer" placeholder="Write the independence statements using ⊥⊥ notation..."></textarea>
+      <button class="reveal-btn" onclick="revealModel('m-ex2')">Reveal model answer</button>
+      <div class="model-answer" id="m-ex2">
+        Observing WetGrass blocks the chain at that node. Therefore:<br><br>
+        <strong>Season ⊥⊥ SlipperyPath | WetGrass</strong><br>
+        <strong>Sprinkler ⊥⊥ SlipperyPath | WetGrass</strong><br><br>
+        Also (by chain rule applied to the left part): Season ⊥⊥ SlipperyPath | Sprinkler (because Sprinkler also blocks the left segment). But the cleanest set is the two above, since WetGrass is observed.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     SECTION 2 — FORKS
+══════════════════════════════════════════════ -->
+<div class="section-header">
+  <span class="section-num">02</span>
+  <span class="section-title">Forks (Common Cause)</span>
+  <span class="section-tag tag-read">Read First</span>
+</div>
+
+<div class="concept">
+  <div class="concept-title">What is a fork?</div>
+  <p>A fork has a single parent node with two or more children: <strong>A ← B → C</strong>. The parent is the common cause. The children are not directly connected to each other — but they appear correlated because they share the same parent.</p>
+  <p>Real example: <strong>JohnCalls ← Alarm → MaryCalls</strong>. The alarm causes both calls. Without knowing the alarm state, observing John called gives you information about Mary calling — they look correlated.</p>
+</div>
+
+<div class="diagram-wrap">
+  <svg width="400" height="130" viewBox="0 0 400 130">
+    <defs>
+      <marker id="arr-f" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="#2d6a8f" stroke-width="1.5"/>
+      </marker>
+    </defs>
+    <rect x="148" y="10" width="100" height="40" rx="4" fill="#fef3d0" stroke="#b8760a" stroke-width="1.5" stroke-dasharray="4 2"/>
+    <text x="198" y="28" text-anchor="middle" font-family="DM Sans" font-size="13" font-weight="500" fill="#7a4a00">Alarm</text>
+    <text x="198" y="44" text-anchor="middle" font-family="DM Sans" font-size="11" fill="#b8760a">common cause</text>
+    <line x1="175" y1="50" x2="100" y2="85" stroke="#2d6a8f" stroke-width="1.5" marker-end="url(#arr-f)"/>
+    <line x1="220" y1="50" x2="294" y2="85" stroke="#2d6a8f" stroke-width="1.5" marker-end="url(#arr-f)"/>
+    <rect x="20" y="88" width="120" height="36" rx="4" fill="#d0e8f5" stroke="#2d6a8f" stroke-width="1"/>
+    <text x="80" y="110" text-anchor="middle" font-family="DM Sans" font-size="12" fill="#1a3d5c">JohnCalls</text>
+    <rect x="258" y="88" width="120" height="36" rx="4" fill="#d0e8f5" stroke="#2d6a8f" stroke-width="1"/>
+    <text x="318" y="110" text-anchor="middle" font-family="DM Sans" font-size="12" fill="#1a3d5c">MaryCalls</text>
+    <text x="198" y="126" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#7a7a9a">observe alarm → children become independent</text>
+  </svg>
+</div>
+
+<div class="rule-box">
+  <strong>The Fork Rule:</strong> In A ← B → C, information flows freely when B is <em>not</em> observed. Conditioning on B <strong>blocks</strong> the path — the children A and C become conditionally independent given B.
+  <br><br>
+  <span style="font-family:'DM Mono',monospace;font-size:12px">A ⊥⊥ C | B &nbsp;&nbsp; but &nbsp;&nbsp; A ⊬⊥ C (marginally)</span>
+</div>
+
+<div class="concept">
+  <div class="concept-title">Intuition — the "explaining parent" idea</div>
+  <p>Once you know the alarm state, it fully explains both John's and Mary's calling behaviour. John calling gives you zero additional information about Mary's call — the common cause has already been "accounted for." The parent screens off the children from each other.</p>
+  <p><strong>Analogy (Berkson's paradox):</strong> Two symptoms (fever, rash) both caused by a disease. If you know the disease is present, learning about fever tells you nothing new about rash — the disease already explains both. But if you don't know the disease status, fever and rash look correlated.</p>
+</div>
+
+<hr class="divider">
+<div class="section-header" style="margin-top:8px">
+  <span class="section-num" style="color:var(--paper3)">02</span>
+  <span class="section-title">Discuss</span>
+  <span class="section-tag tag-discuss">Class Discussion</span>
+</div>
+
+<div class="discuss-block">
+  <div class="discuss-prompt" onclick="toggleDiscuss('d3')">
+    <span class="discuss-icon">Q3</span>
+    <span>Two students both score well on an exam. Is this a coincidence, or are their scores related? What's the "fork" structure here?</span>
+  </div>
+  <div class="discuss-answer" id="d3">
+    Their scores are related through a <strong>common cause</strong> — the exam difficulty, quality of teaching, or shared preparation material. The fork is: StudentA_Score ← ExamDifficulty → StudentB_Score. Without knowing the exam difficulty, high scores appear correlated. Once you control for difficulty (observe it), the scores become independent — one student's score tells you nothing extra about the other's.
+  </div>
+
+  <div class="discuss-prompt" onclick="toggleDiscuss('d4')">
+    <span class="discuss-icon">Q4</span>
+    <span>In a fork, can the two children ever influence each other even after observing the parent? When might this happen in a real Bayesian network?</span>
+  </div>
+  <div class="discuss-answer" id="d4">
+    In a <strong>pure fork</strong> with only this one path, no — observing the parent fully blocks the path. However, in a real network there may be <em>other paths</em> connecting the two children (e.g., a direct edge between them, or another common ancestor). In that case, blocking the fork path is not enough — you'd need all paths blocked to achieve independence. This is exactly what d-separation checks.
+  </div>
+</div>
+
+<hr class="divider">
+<div class="section-header" style="margin-top:8px">
+  <span class="section-num" style="color:var(--paper3)">02</span>
+  <span class="section-title">Exercises</span>
+  <span class="section-tag tag-solve">Solve</span>
+</div>
+
+<!-- Exercise 3 -->
+<div class="exercise">
+  <div class="exercise-header">
+    <span class="ex-num">EX 03</span>
+    <span class="ex-title">Spot the fork</span>
+    <span class="ex-diff diff-easy">EASY</span>
+  </div>
+  <div class="exercise-body">
+    <p>Network: <strong>Weather → WetGrass ← Sprinkler</strong> and <strong>Weather → IcyRoads</strong></p>
+    <div class="net-display">
+      <svg width="420" height="120" viewBox="0 0 420 120">
+        <defs><marker id="a2" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a1a2e" stroke-width="1.5"/></marker></defs>
+        <rect x="155" y="10" width="90" height="36" rx="3" fill="#fef3d0" stroke="#b8760a" stroke-width="1.2"/>
+        <text x="200" y="32" text-anchor="middle" font-family="DM Sans" font-size="12" fill="#1a1a2e">Weather</text>
+        <line x1="175" y1="46" x2="120" y2="76" stroke="#1a1a2e" stroke-width="1.2" marker-end="url(#a2)"/>
+        <line x1="225" y1="46" x2="280" y2="76" stroke="#1a1a2e" stroke-width="1.2" marker-end="url(#a2)"/>
+        <rect x="60" y="78" width="100" height="34" rx="3" fill="#f2f0ea" stroke="#d0cdc4"/>
+        <text x="110" y="99" text-anchor="middle" font-family="DM Sans" font-size="12" fill="#1a1a2e">WetGrass</text>
+        <rect x="250" y="78" width="90" height="34" rx="3" fill="#f2f0ea" stroke="#d0cdc4"/>
+        <text x="295" y="99" text-anchor="middle" font-family="DM Sans" font-size="12" fill="#1a1a2e">IcyRoads</text>
+        <rect x="10" y="78" width="44" height="34" rx="3" fill="#d0e8f5" stroke="#2d6a8f" stroke-width="1"/>
+        <text x="32" y="99" text-anchor="middle" font-family="DM Sans" font-size="11" fill="#1a3d5c">Sprnk.</text>
+        <line x1="54" y1="95" x2="58" y2="95" stroke="#1a1a2e" stroke-width="1.2" marker-end="url(#a2)"/>
+      </svg>
+    </div>
+    <p>Are <strong>WetGrass</strong> and <strong>IcyRoads</strong> independent given <strong>Weather</strong>?</p>
+    <div class="answer-area">
+      <div class="answer-options">
+        <button class="opt-btn" onclick="checkMCQ(this,'ex3','A')">A: Yes — Weather blocks the fork path</button>
+        <button class="opt-btn" onclick="checkMCQ(this,'ex3','B')">B: No — they remain dependent</button>
+        <button class="opt-btn" onclick="checkMCQ(this,'ex3','C')">C: Only if Sprinkler is also observed</button>
+      </div>
+      <div class="feedback" id="fb-ex3"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Exercise 4 -->
+<div class="exercise">
+  <div class="exercise-header">
+    <span class="ex-num">EX 04</span>
+    <span class="ex-title">Fork vs chain — can you tell them apart?</span>
+    <span class="ex-diff diff-med">MEDIUM</span>
+  </div>
+  <div class="exercise-body">
+    <p>For each scenario, identify whether the structure is a <strong>chain</strong> or a <strong>fork</strong>, and write the independence statement that holds when the middle/parent node is observed.</p>
+    <div class="answer-area">
+      <div class="answer-label">Scenario (a): Virus → Fever → Sweat</div>
+      <textarea class="open-answer" style="min-height:56px" placeholder="Structure type and independence statement..."></textarea>
+      <div class="answer-label" style="margin-top:10px">Scenario (b): Flu ← Season → HayFever</div>
+      <textarea class="open-answer" style="min-height:56px" placeholder="Structure type and independence statement..."></textarea>
+      <button class="reveal-btn" onclick="revealModel('m-ex4')">Reveal model answer</button>
+      <div class="model-answer" id="m-ex4">
+        <strong>(a) Chain:</strong> Virus → Fever → Sweat<br>
+        Fever is the middle node. Conditioning on it blocks the path.<br>
+        Independence: <strong>Virus ⊥⊥ Sweat | Fever</strong><br><br>
+        <strong>(b) Fork:</strong> Flu ← Season → HayFever<br>
+        Season is the common cause/parent. Conditioning on it blocks the path.<br>
+        Independence: <strong>Flu ⊥⊥ HayFever | Season</strong><br><br>
+        Note: In both cases the rule is the same — observe the middle/parent node to achieve independence. The difference is in causal direction, not in the independence result.
+      </div>
+    </div>
+  </div>
+</div>
+
+
+<!-- ══════════════════════════════════════════════
+     SECTION 3 — COLLIDERS & d-SEPARATION
+══════════════════════════════════════════════ -->
+<div class="section-header">
+  <span class="section-num">03</span>
+  <span class="section-title">Colliders &amp; d-Separation</span>
+  <span class="section-tag tag-read">Read First</span>
+</div>
+
+<div class="concept">
+  <div class="concept-title">What is a collider?</div>
+  <p>A collider has two or more parents pointing into a single child: <strong>A → B ← C</strong>. The child B is where the arrows "collide." Unlike chains and forks, the two causes A and C are <em>independent by default</em> — but observing the effect B (or any descendant of B) makes them dependent.</p>
+  <p>Real example: <strong>Earthquake → Alarm ← Burglary</strong>. Earthquakes and burglaries happen for completely different reasons. But once you know the alarm rang, the two causes start influencing each other's likelihood.</p>
+</div>
+
+<div class="concept">
+  <div class="concept-title">Explaining Away</div>
+  <p>This phenomenon has a name: <strong>explaining away</strong>. Once you know the alarm rang and you learn a burglary occurred, the burglary <em>explains away</em> the need for an earthquake — so your belief in an earthquake decreases. Conversely, if you rule out a burglary, your belief in an earthquake increases to explain the alarm.</p>
+  <p>The two causes compete to explain the single observed effect.</p>
+</div>
+
+<div class="diagram-wrap">
+  <svg width="400" height="140" viewBox="0 0 400 140">
+    <defs>
+      <marker id="arr-c" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M2 1L8 5L2 9" fill="none" stroke="#2d6a8f" stroke-width="1.5"/>
+      </marker>
+    </defs>
+    <rect x="10" y="10" width="120" height="40" rx="4" fill="#d0e8f5" stroke="#2d6a8f" stroke-width="1"/>
+    <text x="70" y="28" text-anchor="middle" font-family="DM Sans" font-size="13" font-weight="500" fill="#1a3d5c">Earthquake</text>
+    <text x="70" y="44" text-anchor="middle" font-family="DM Sans" font-size="11" fill="#2d6a8f">cause 1</text>
+    <rect x="270" y="10" width="120" height="40" rx="4" fill="#d0e8f5" stroke="#2d6a8f" stroke-width="1"/>
+    <text x="330" y="28" text-anchor="middle" font-family="DM Sans" font-size="13" font-weight="500" fill="#1a3d5c">Burglary</text>
+    <text x="330" y="44" text-anchor="middle" font-family="DM Sans" font-size="11" fill="#2d6a8f">cause 2</text>
+    <line x1="110" y1="40" x2="178" y2="80" stroke="#2d6a8f" stroke-width="1.5" marker-end="url(#arr-c)"/>
+    <line x1="290" y1="40" x2="222" y2="80" stroke="#2d6a8f" stroke-width="1.5" marker-end="url(#arr-c)"/>
+    <rect x="148" y="82" width="104" height="40" rx="4" fill="#fde0d8" stroke="#c84b31" stroke-width="1.5" stroke-dasharray="4 2"/>
+    <text x="200" y="100" text-anchor="middle" font-family="DM Sans" font-size="13" font-weight="500" fill="#8b2a14">Alarm</text>
+    <text x="200" y="116" text-anchor="middle" font-family="DM Sans" font-size="11" fill="#c84b31">collider — if observed →</text>
+    <text x="200" y="132" text-anchor="middle" font-family="DM Mono" font-size="10" fill="#c84b31">opens the path</text>
+  </svg>
+</div>
+
+<div class="rule-box" style="border-color:#c84b31;background:#fde0d8">
+  <strong style="color:#c84b31">The Collider Rule (OPPOSITE to chain/fork):</strong> In A → B ← C, the path is <em>blocked by default</em>. Conditioning on B (or any descendant of B) <strong>opens</strong> the path — A and C become dependent.
+  <br><br>
+  <span style="font-family:'DM Mono',monospace;font-size:12px">A ⊥⊥ C &nbsp;&nbsp; but &nbsp;&nbsp; A ⊬⊥ C | B (and A ⊬⊥ C | descendant of B)</span>
+</div>
+
+<hr class="divider">
+
+<div class="concept">
+  <div class="concept-title">d-Separation — putting it all together</div>
+  <p><strong>d-separation</strong> is the graphical algorithm that tests conditional independence between any two nodes X and Y given an evidence set Z. The idea: list every undirected path between X and Y, then check whether each path is blocked or open according to the three rules. If ALL paths are blocked → X and Y are d-separated → conditionally independent given Z.</p>
+</div>
+
+<div class="diagram-wrap">
+  <table class="summary-table" style="font-size:13px">
+    <thead>
+      <tr><th>Structure</th><th>Without observing middle/child</th><th>Observing middle/child</th></tr>
+    </thead>
+    <tbody>
+      <tr>
+        <td><strong>Chain</strong> A→B→C</td>
+        <td><span class="chip chip-open">PATH OPEN</span> A,C dependent</td>
+        <td><span class="chip chip-block">PATH BLOCKED</span> A ⊥⊥ C | B</td>
+      </tr>
+      <tr>
+        <td><strong>Fork</strong> A←B→C</td>
+        <td><span class="chip chip-open">PATH OPEN</span> A,C dependent</td>
+        <td><span class="chip chip-block">PATH BLOCKED</span> A ⊥⊥ C | B</td>
+      </tr>
+      <tr>
+        <td><strong>Collider</strong> A→B←C</td>
+        <td><span class="chip chip-block">PATH BLOCKED</span> A ⊥⊥ C</td>
+        <td><span class="chip chip-open">PATH OPENS</span> A ⊬⊥ C | B</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+<div class="concept">
+  <div class="concept-title">d-Separation algorithm (step by step)</div>
+  <p><strong>Step 1:</strong> List all undirected paths between X and Y (ignore edge directions when finding paths, just follow connections).</p>
+  <p><strong>Step 2:</strong> For each path, examine every node on that path. Classify each node as chain, fork, or collider <em>with respect to that path</em> (same node can be different types on different paths).</p>
+  <p><strong>Step 3:</strong> A path is blocked if any node on it satisfies: (a) it's a chain/fork middle node and it IS in Z, or (b) it's a collider and neither it nor any of its descendants is in Z.</p>
+  <p><strong>Step 4:</strong> If ALL paths are blocked → d-separated → X ⊥⊥ Y | Z. If any path is open → dependent.</p>
+</div>
+
+<hr class="divider">
+<div class="section-header" style="margin-top:8px">
+  <span class="section-num" style="color:var(--paper3)">03</span>
+  <span class="section-title">Discuss</span>
+  <span class="section-tag tag-discuss">Class Discussion</span>
+</div>
+
+<div class="discuss-block">
+  <div class="discuss-prompt" onclick="toggleDiscuss('d5')">
+    <span class="discuss-icon">Q5</span>
+    <span>You apply for a competitive scholarship. The selection committee picks candidates who are either talented OR from an under-represented background (or both). You get selected. Now, does knowing you're from an under-represented background affect beliefs about your talent? What structure is this?</span>
+  </div>
+  <div class="discuss-answer" id="d5">
+    This is a <strong>collider</strong> — Talent → Selected ← Background. By default, Talent and Background are independent. But once you condition on "Selected = yes" (the collider), they become negatively correlated: knowing you're from an under-represented background slightly lowers the posterior belief that raw talent was needed to get selected. This is <strong>Berkson's paradox</strong> and it's a collider in action. It's also why studies that select on a collider produce misleading correlations.
+  </div>
+
+  <div class="discuss-prompt" onclick="toggleDiscuss('d6')">
+    <span class="discuss-icon">Q6</span>
+    <span>What's the key difference in how chain/fork vs collider respond to conditioning? Why is the collider "backwards"?</span>
+  </div>
+  <div class="discuss-answer" id="d6">
+    In chains and forks, the middle/parent node acts as the <em>intermediary</em> or <em>common cause</em>. Observing it gives you all the information connecting the two endpoints — so they become independent. <br><br>In a collider, the child node is the <em>common effect</em>. By default there's no connection. But observing the effect creates a "competition" between the two causes — if one cause is confirmed, the other becomes less likely, and vice versa. Conditioning <em>creates</em> a dependency that wasn't there before. It's backwards because information flows <em>up</em> from the effect to the causes.
+  </div>
+</div>
+
+<hr class="divider">
+<div class="section-header" style="margin-top:8px">
+  <span class="section-num" style="color:var(--paper3)">03</span>
+  <span class="section-title">Exercises</span>
+  <span class="section-tag tag-solve">Solve</span>
+</div>
+
+<!-- Exercise 5 -->
+<div class="exercise">
+  <div class="exercise-header">
+    <span class="ex-num">EX 05</span>
+    <span class="ex-title">Collider identification</span>
+    <span class="ex-diff diff-easy">EASY</span>
+  </div>
+  <div class="exercise-body">
+    <p>Network: <strong>Rain → WetGrass ← Sprinkler</strong>. You observe that the grass is wet. What happens?</p>
+    <div class="answer-area">
+      <div class="answer-options">
+        <button class="opt-btn" onclick="checkMCQ(this,'ex5','A')">A: Rain ⊥⊥ Sprinkler | WetGrass</button>
+        <button class="opt-btn" onclick="checkMCQ(this,'ex5','B')">B: Rain ⊬⊥ Sprinkler | WetGrass (explaining away)</button>
+        <button class="opt-btn" onclick="checkMCQ(this,'ex5','C')">C: Rain and Sprinkler become independent always</button>
+        <button class="opt-btn" onclick="checkMCQ(this,'ex5','D')">D: No change — they were already independent</button>
+      </div>
+      <div class="feedback" id="fb-ex5"></div>
+    </div>
+  </div>
+</div>
+
+<!-- Exercise 6 — Multi-path d-sep -->
+<div class="exercise">
+  <div class="exercise-header">
+    <span class="ex-num">EX 06</span>
+    <span class="ex-title">d-Separation with multiple paths</span>
+    <span class="ex-diff diff-hard">HARD</span>
+  </div>
+  <div class="exercise-body">
+    <p>Consider the network below. Answer all three queries.</p>
+    <div class="net-display">
+      <svg width="420" height="200" viewBox="0 0 420 200">
+        <defs><marker id="a3" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#1a1a2e" stroke-width="1.5"/></marker></defs>
+        <!-- A -->
+        <rect x="10" y="80" width="56" height="34" rx="3" fill="#d0e8f5" stroke="#2d6a8f"/>
+        <text x="38" y="101" text-anchor="middle" font-family="DM Mono" font-size="14" font-weight="500" fill="#1a1a2e">A</text>
+        <!-- B -->
+        <rect x="120" y="80" width="56" height="34" rx="3" fill="#f2f0ea" stroke="#d0cdc4"/>
+        <text x="148" y="101" text-anchor="middle" font-family="DM Mono" font-size="14" fill="#1a1a2e">B</text>
+        <!-- C -->
+        <rect x="230" y="80" width="56" height="34" rx="3" fill="#d0f0e0" stroke="#2d7a4f"/>
+        <text x="258" y="101" text-anchor="middle" font-family="DM Mono" font-size="14" font-weight="500" fill="#1a1a2e">C</text>
+        <!-- D -->
+        <rect x="120" y="154" width="56" height="34" rx="3" fill="#f2f0ea" stroke="#d0cdc4"/>
+        <text x="148" y="175" text-anchor="middle" font-family="DM Mono" font-size="14" fill="#1a1a2e">D</text>
+        <!-- E -->
+        <rect x="120" y="10" width="56" height="34" rx="3" fill="#f2f0ea" stroke="#d0cdc4"/>
+        <text x="148" y="31" text-anchor="middle" font-family="DM Mono" font-size="14" fill="#1a1a2e">E</text>
+        <!-- F -->
+        <rect x="340" y="154" width="56" height="34" rx="3" fill="#fde0d8" stroke="#c84b31"/>
+        <text x="368" y="175" text-anchor="middle" font-family="DM Mono" font-size="14" font-weight="500" fill="#1a1a2e">F</text>
+        <!-- Edges -->
+        <!-- A→B -->
+        <line x1="66" y1="97" x2="118" y2="97" stroke="#1a1a2e" stroke-width="1.2" marker-end="url(#a3)"/>
+        <!-- C→B -->
+        <line x1="230" y1="97" x2="178" y2="97" stroke="#1a1a2e" stroke-width="1.2" marker-end="url(#a3)"/>
+        <!-- B→D -->
+        <line x1="148" y1="114" x2="148" y2="152" stroke="#1a1a2e" stroke-width="1.2" marker-end="url(#a3)"/>
+        <!-- E→B -->
+        <line x1="148" y1="44" x2="148" y2="78" stroke="#1a1a2e" stroke-width="1.2" marker-end="url(#a3)"/>
+        <!-- C→F via D area -->
+        <line x1="268" y1="114" x2="352" y2="155" stroke="#1a1a2e" stroke-width="1.2" marker-end="url(#a3)"/>
+        <text x="320" y="128" font-family="DM Sans" font-size="10" fill="#7a7a9a">C→F</text>
+        <!-- Labels -->
+        <text x="38" y="130" text-anchor="middle" font-family="DM Sans" font-size="10" fill="#2d6a8f">query</text>
+        <text x="258" y="130" text-anchor="middle" font-family="DM Sans" font-size="10" fill="#2d7a4f">query</text>
+      </svg>
+    </div>
+    <p style="font-size:13px;color:var(--ink3);margin-bottom:14px">Edges: A→B, C→B, E→B, B→D, C→F. Complete the path analysis table, then answer each query.</p>
+
+    <table class="path-table">
+      <thead>
+        <tr><th>Query</th><th>Evidence Z</th><th>Path(s)</th><th>Each node's role</th><th>Answer</th></tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="mono">A ⊥⊥ C?</td>
+          <td class="mono">Z = ∅</td>
+          <td class="mono">A→B←C</td>
+          <td style="font-size:12px;color:var(--ink3)">B is a <em>collider</em>. Not observed, no descendant observed. Path blocked.</td>
+          <td><span class="chip chip-block">Independent</span></td>
+        </tr>
+        <tr>
+          <td class="mono">A ⊥⊥ C?</td>
+          <td class="mono">Z = {D}</td>
+          <td class="mono">A→B←C</td>
+          <td style="font-size:12px;color:var(--ink3)">B is a collider. D is a <em>descendant of B</em> and is in Z → path <strong>opens</strong>.</td>
+          <td><span class="chip chip-open">Dependent</span></td>
+        </tr>
+        <tr>
+          <td class="mono">A ⊥⊥ F?</td>
+          <td class="mono">Z = {B}</td>
+          <td style="font-size:12px" colspan="2">
+            <strong>Your turn:</strong> Identify the only path from A to F, identify node roles, and determine if it is blocked or open given B.
+          </td>
+          <td id="ex6-result"><span style="color:var(--ink3);font-size:11px">?</span></td>
+        </tr>
+      </tbody>
+    </table>
+
+    <div class="answer-area" style="margin-top:12px">
+      <div class="answer-label">Your reasoning for query 3 (A ⊥⊥ F | B)</div>
+      <textarea class="open-answer" placeholder="Path: A → ... → F. Node roles on this path..."></textarea>
+      <button class="reveal-btn" onclick="revealModel('m-ex6')">Reveal answer</button>
+      <div class="model-answer" id="m-ex6">
+        <strong>Path:</strong> A → B → ? — wait, there's no direct B→F edge. The only path from A to F is:<br>
+        <strong>A → B ← C → F</strong><br><br>
+        Node roles on this path:<br>
+        • <strong>B</strong> (A→B←C): <em>collider</em>. B is in Z (observed). → This opens the collider at B.<br>
+        • <strong>C</strong> (B←C→F): <em>fork/chain middle node</em>. C is NOT in Z. → This part of the path is open.<br><br>
+        Since B (collider) is observed → the path is <strong>open</strong> at B. And C (chain node) is not observed → open at C.<br>
+        <strong>Therefore: A ⊬⊥ F | B — they are DEPENDENT given B.</strong><br><br>
+        Intuition: Observing B creates a dependency between A and C (explaining away). C is then connected to F through a chain, which is open. So information flows from A through the opened collider B, then through C to F.
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Exercise 7 — Hard exam-style -->
+<div class="exercise">
+  <div class="exercise-header">
+    <span class="ex-num">EX 07</span>
+    <span class="ex-title">Exam-style: Find the evidence set</span>
+    <span class="ex-diff diff-hard">HARD</span>
+  </div>
+  <div class="exercise-body">
+    <p>Network: <strong>R → S → W ← T</strong> (R=Rain, S=Sprinkler, W=WetGrass, T=Thunder)</p>
+    <p>Find an evidence set Z such that <strong>R ⊥⊥ T | Z</strong>. There may be more than one valid answer. Justify your reasoning.</p>
+    <div class="answer-area">
+      <textarea class="open-answer" placeholder="Possible Z sets and why they work..."></textarea>
+      <button class="reveal-btn" onclick="revealModel('m-ex7')">Reveal answer</button>
+      <div class="model-answer" id="m-ex7">
+        The only path from R to T is: <strong>R → S → W ← T</strong><br><br>
+        This path has two nodes to check:<br>
+        • <strong>S</strong> (R→S→W): a chain middle node. If S ∈ Z → blocks here.<br>
+        • <strong>W</strong> (S→W←T): a collider. If W ∉ Z and no descendant of W ∈ Z → blocks here.<br><br>
+        <strong>Valid Z sets:</strong><br>
+        1. <strong>Z = ∅</strong> (empty): W is a collider, not observed, no descendant observed → path blocked at W. R ⊥⊥ T. ✓<br>
+        2. <strong>Z = {S}</strong>: S is a chain node and is observed → path blocked at S. R ⊥⊥ T | S. ✓<br><br>
+        <strong>Invalid Z sets (make them DEPENDENT):</strong><br>
+        • Z = {W}: W is a collider, now observed → path opens. R ⊬⊥ T | W. ✗<br><br>
+        Key insight: for this path, you can achieve independence either by blocking the chain (observe S) or by leaving the collider alone (don't observe W).
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Exercise 8 — Final challenge -->
+<div class="exercise">
+  <div class="exercise-header">
+    <span class="ex-num">EX 08</span>
+    <span class="ex-title">Full network d-separation</span>
+    <span class="ex-diff diff-hard">HARD</span>
+  </div>
+  <div class="exercise-body">
+    <p>Full network: <strong>A → B → D → E ← F</strong> and <strong>C → B</strong>. Query: <strong>Is A ⊥⊥ F given {B, E}?</strong></p>
+    <p>Work through every path systematically using the table below.</p>
+    <div class="answer-area">
+      <div class="answer-label">Step 1 — list all paths from A to F</div>
+      <textarea class="open-answer" style="min-height:56px" placeholder="Path 1: A → ...&#10;Path 2: A → ..."></textarea>
+      <div class="answer-label" style="margin-top:10px">Step 2 — for each path, is it blocked or open? Why?</div>
+      <textarea class="open-answer" style="min-height:80px" placeholder="Path 1: ...blocked/open because...&#10;Path 2: ...blocked/open because..."></textarea>
+      <div class="answer-label" style="margin-top:10px">Step 3 — conclusion</div>
+      <div class="answer-options">
+        <button class="opt-btn" onclick="checkMCQ(this,'ex8','A')">A: A ⊥⊥ F | {B,E}</button>
+        <button class="opt-btn" onclick="checkMCQ(this,'ex8','B')">B: A ⊬⊥ F | {B,E}</button>
+      </div>
+      <div class="feedback" id="fb-ex8"></div>
+      <button class="reveal-btn" onclick="revealModel('m-ex8')" style="margin-top:10px">Reveal full solution</button>
+      <div class="model-answer" id="m-ex8">
+        <strong>Step 1 — Paths from A to F:</strong><br>
+        Only one path exists: <strong>A → B → D → E ← F</strong><br><br>
+        <strong>Step 2 — Check nodes on this path with Z = {B, E}:</strong><br>
+        • <strong>B</strong> (A→B→D): chain/fork middle node. B ∈ Z (observed) → <span style="color:var(--accent)">BLOCKS here.</span><br>
+        • <strong>D</strong> (B→D→E): chain middle node. D ∉ Z → open at D.<br>
+        • <strong>E</strong> (D→E←F): collider. E ∈ Z (observed) → <span style="color:var(--green)">OPENS at E.</span><br><br>
+        One node blocks (B), one opens (E). <strong>The path is blocked</strong> — a single blocked node is enough to block the whole path.<br><br>
+        <strong>Step 3 — Conclusion: A ⊥⊥ F | {B, E} ✓</strong><br><br>
+        Note: Even though observing E (the collider) tries to open the path, B blocks it upstream first. The path only needs to be blocked at one point.
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /container -->
+
+<!-- SCORE -->
+<div class="score-panel">
+  <div class="score-label">Score</div>
+  <div class="score-val" id="score-display">0 / 4</div>
+  <div class="score-sub">MCQ questions</div>
+</div>
+
+<div class="footer">BAYESIAN NETWORKS WORKSHEET &nbsp;·&nbsp; ADVANCED MACHINE LEARNING</div>
+
+<script>
+  const answers = {
+    ex1: { correct: 'B', feedback: { B: 'Correct! Sprinkler is the middle node in the chain. Observing it blocks the path — Season and WetGrass become conditionally independent.', A: 'Not quite. Season and WetGrass ARE dependent when Sprinkler is not observed (marginal dependence).', C: 'Incorrect. Observing the middle node blocks the path, not opens it.', D: 'Incorrect. The chain rule gives us a useful independence once Sprinkler is observed.' }},
+    ex3: { correct: 'A', feedback: { A: 'Correct! Weather is the common parent (fork). Conditioning on it blocks the path — WetGrass and IcyRoads become conditionally independent.', B: 'Incorrect. The fork rule says conditioning on the parent blocks the path.', C: 'Incorrect. Sprinkler is not on the path between WetGrass and IcyRoads via Weather.' }},
+    ex5: { correct: 'B', feedback: { B: 'Correct! WetGrass is a collider. Observing it opens the path — Rain and Sprinkler become dependent (explaining away).', A: 'Incorrect — this reverses the collider rule. Conditioning on a collider OPENS the path.', C: 'Incorrect. They are only independent when WetGrass is NOT observed.', D: 'Incorrect. Observing the collider changes the situation — they become dependent.' }},
+    ex8: { correct: 'A', feedback: { A: 'Correct! B is a chain node in Z — it blocks the only path from A to F, regardless of what E does.', B: 'Not quite. Even though E (collider) is observed and tries to open the path, B is also observed and blocks it upstream. One blocked node is enough.' }}
+  };
+
+  let score = 0;
+  let answered = {};
+
+  function checkMCQ(btn, exId, choice) {
+    if (answered[exId]) return;
+    answered[exId] = true;
+    const data = answers[exId];
+    const container = btn.closest('.exercise-body');
+    const allBtns = container.querySelectorAll('.opt-btn');
+    allBtns.forEach(b => b.disabled = true);
+    const fb = document.getElementById('fb-' + exId);
+    fb.classList.add('show');
+    if (choice === data.correct) {
+      btn.classList.add('selected-correct');
+      fb.classList.add('correct');
+      fb.innerHTML = '✓ ' + data.feedback[choice];
+      score++;
+    } else {
+      btn.classList.add('selected-wrong');
+      fb.classList.add('wrong');
+      fb.innerHTML = '✗ ' + (data.feedback[choice] || 'Incorrect.');
+      allBtns.forEach(b => {
+        if (b.textContent.trim().startsWith(data.correct)) b.classList.add('reveal-correct');
+      });
+    }
+    document.getElementById('score-display').textContent = score + ' / 4';
+    updateProgress();
+  }
+
+  function toggleDiscuss(id) {
+    const el = document.getElementById(id);
+    el.classList.toggle('open');
+  }
+
+  function revealModel(id) {
+    document.getElementById(id).classList.toggle('show');
+    updateProgress();
+  }
+
+  function updateProgress() {
+    const total = document.querySelectorAll('.opt-btn.selected-correct, .opt-btn.selected-wrong').length
+      + document.querySelectorAll('.model-answer.show').length
+      + document.querySelectorAll('.discuss-answer.open').length;
+    const max = 4 + 4 + 6;
+    document.getElementById('progress').style.width = Math.min(100, Math.round(total / max * 100)) + '%';
+  }
+</script>
+</body>
+</html>
