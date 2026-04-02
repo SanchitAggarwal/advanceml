@@ -1,0 +1,1320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bayesian Networks — Factorization & Marginalization</title>
+<link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,600;1,400&family=DM+Mono:wght@400;500&family=Outfit:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --border: #e0ddd5;
+    --border2: #ccc9be;
+    --text: #1a1916;
+    --text2: #5a5750;
+    --text3: #9a9790;
+    --accent: #17437c;
+    --accent-light: #e8f0fa;
+    --accent-mid: #b8cfe8;
+    --green: #2d6a2d;
+    --green-light: #eaf3ea;
+    --green-mid: #a8d4a8;
+    --amber: #7a4f10;
+    --amber-light: #fdf3e3;
+    --amber-mid: #f2c97e;
+    --red-light: #fdf0ef;
+    --shadow: 0 1px 4px rgba(0,0,0,0.07), 0 4px 16px rgba(0,0,0,0.05);
+    --radius: 10px;
+    --radius-sm: 6px;
+    --font-body: 'Outfit', sans-serif;
+    --font-serif: 'Lora', Georgia, serif;
+    --font-mono: 'DM Mono', 'Courier New', monospace;
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    font-family: var(--font-body);
+    background: var(--bg);
+    color: var(--text);
+    font-size: 16px;
+    line-height: 1.7;
+    min-height: 100vh;
+  }
+
+  /* HEADER */
+  .site-header {
+    background: var(--accent);
+    color: #fff;
+    padding: 0;
+  }
+  .header-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 32px 40px;
+  }
+  .course-tag {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    background: rgba(255,255,255,0.15);
+    border: 1px solid rgba(255,255,255,0.25);
+    color: rgba(255,255,255,0.85);
+    padding: 4px 12px;
+    border-radius: 20px;
+    margin-bottom: 18px;
+  }
+  .site-header h1 {
+    font-family: var(--font-serif);
+    font-size: clamp(28px, 5vw, 42px);
+    font-weight: 600;
+    line-height: 1.2;
+    color: #fff;
+    margin-bottom: 12px;
+  }
+  .site-header .subtitle {
+    font-size: 17px;
+    color: rgba(255,255,255,0.72);
+    font-weight: 300;
+    max-width: 600px;
+  }
+  .header-meta {
+    margin-top: 28px;
+    display: flex;
+    gap: 24px;
+    flex-wrap: wrap;
+  }
+  .meta-item {
+    font-size: 13px;
+    color: rgba(255,255,255,0.6);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .meta-dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.4);
+  }
+
+  /* NAV */
+  .toc-bar {
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+  }
+  .toc-inner {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 0 32px;
+    display: flex;
+    gap: 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .toc-inner::-webkit-scrollbar { display: none; }
+  .toc-link {
+    padding: 14px 16px;
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--text2);
+    text-decoration: none;
+    white-space: nowrap;
+    border-bottom: 2px solid transparent;
+    transition: all 0.15s;
+  }
+  .toc-link:hover { color: var(--accent); border-bottom-color: var(--accent-mid); }
+
+  /* MAIN */
+  .main {
+    max-width: 860px;
+    margin: 0 auto;
+    padding: 48px 32px 80px;
+  }
+
+  /* SECTION */
+  .section { margin-bottom: 64px; }
+  .section-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 24px;
+  }
+  .section-num {
+    width: 36px; height: 36px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: #fff;
+    font-size: 14px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+  }
+  .section-title {
+    font-family: var(--font-serif);
+    font-size: 24px;
+    font-weight: 600;
+    color: var(--text);
+  }
+
+  h3 {
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--text);
+    margin: 28px 0 10px;
+  }
+  p {
+    color: var(--text2);
+    margin-bottom: 14px;
+    font-size: 15.5px;
+  }
+  p strong { color: var(--text); font-weight: 500; }
+
+  /* MATH BLOCK */
+  .math-block {
+    background: var(--text);
+    color: #e8e6e0;
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    margin: 16px 0;
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    line-height: 1.8;
+    overflow-x: auto;
+    white-space: pre;
+  }
+  .math-block .hi { color: #f2c97e; }
+  .math-block .hi2 { color: #a8d4a8; }
+  .math-block .dim { color: #6a6860; }
+
+  /* CALLOUT */
+  .callout {
+    border-radius: var(--radius);
+    padding: 16px 20px;
+    margin: 20px 0;
+    border-left: 3px solid;
+  }
+  .callout.info {
+    background: var(--accent-light);
+    border-color: var(--accent);
+  }
+  .callout.info p { color: var(--accent); margin: 0; }
+  .callout.info p strong { color: var(--accent); }
+  .callout.success {
+    background: var(--green-light);
+    border-color: var(--green);
+  }
+  .callout.success p { color: var(--green); margin: 0; }
+  .callout.success p strong { color: var(--green); }
+  .callout.warning {
+    background: var(--amber-light);
+    border-color: var(--amber);
+  }
+  .callout.warning p { color: var(--amber); margin: 0; }
+
+  /* DIVIDER */
+  hr { border: none; border-top: 1px solid var(--border); margin: 48px 0; }
+
+  /* TABLE */
+  .table-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin: 16px 0;
+    box-shadow: var(--shadow);
+  }
+  .table-card table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .table-card th {
+    background: var(--surface2);
+    color: var(--text2);
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    padding: 10px 16px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+  }
+  .table-card td {
+    padding: 10px 16px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 13.5px;
+    color: var(--text);
+  }
+  .table-card tr:last-child td { border-bottom: none; }
+  .table-card .row-hi td {
+    background: var(--amber-light);
+    color: var(--amber);
+  }
+  .table-card .label-cell {
+    font-family: var(--font-body);
+    color: var(--text2);
+    font-size: 13px;
+    text-align: left;
+  }
+  .table-caption {
+    background: var(--surface2);
+    border-top: 1px solid var(--border);
+    font-size: 12px;
+    color: var(--text3);
+    text-align: center;
+    padding: 8px;
+  }
+
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  @media(max-width:560px) { .two-col { grid-template-columns: 1fr; } }
+
+  /* NODE SELECTOR */
+  .node-grid {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 10px;
+    margin: 20px 0;
+  }
+  @media(max-width:560px) {
+    .node-grid { grid-template-columns: repeat(3, 1fr); }
+  }
+  .node-card {
+    border: 1.5px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: var(--surface);
+    user-select: none;
+  }
+  .node-card:hover { border-color: var(--accent-mid); background: var(--accent-light); }
+  .node-card.active {
+    border-color: var(--green);
+    background: var(--green-light);
+  }
+  .node-card.active .node-name { color: var(--green); }
+  .node-card.active .node-cpt { color: var(--green); }
+  .node-card.active .node-params { background: var(--green); color: #fff; }
+  .node-name { font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 5px; }
+  .node-cpt { font-size: 11px; font-family: var(--font-mono); color: var(--text3); margin-bottom: 8px; }
+  .node-params {
+    display: inline-block;
+    font-size: 11px;
+    font-weight: 600;
+    padding: 3px 8px;
+    border-radius: 20px;
+    background: var(--surface2);
+    color: var(--text2);
+    transition: all 0.2s;
+  }
+
+  .param-display {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 18px 22px;
+    margin-top: 12px;
+    box-shadow: var(--shadow);
+  }
+  .param-num-wrap { text-align: center; flex-shrink: 0; }
+  .param-num { font-size: 44px; font-weight: 600; font-family: var(--font-mono); color: var(--green); line-height: 1; }
+  .param-label { font-size: 12px; color: var(--text3); margin-top: 4px; }
+  .param-bar-section { flex: 1; }
+  .param-bar-legend {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 6px;
+  }
+  .param-bar-bg {
+    background: var(--surface2);
+    border-radius: 4px;
+    height: 8px;
+    position: relative;
+  }
+  .param-bar-fill {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--green);
+    transition: width 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  .param-bar-marker {
+    position: absolute;
+    right: 0; top: -4px;
+    width: 2px; height: 16px;
+    background: var(--border2);
+    border-radius: 1px;
+  }
+  .param-equation {
+    margin-top: 10px;
+    font-family: var(--font-mono);
+    font-size: 13px;
+    color: var(--text2);
+    min-height: 20px;
+    transition: all 0.2s;
+  }
+  .eq-part { display: inline; }
+  .eq-part.lit { color: var(--green); font-weight: 500; }
+
+  /* STEPPER */
+  .stepper {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    margin: 20px 0;
+  }
+  .stepper-tabs {
+    display: flex;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .stab {
+    flex: 1;
+    padding: 12px 8px;
+    font-size: 12.5px;
+    font-weight: 500;
+    color: var(--text2);
+    text-align: center;
+    cursor: pointer;
+    border-right: 1px solid var(--border);
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .stab:last-child { border-right: none; }
+  .stab.active {
+    background: var(--surface);
+    color: var(--accent);
+  }
+  .stab-num {
+    display: block;
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.07em;
+    text-transform: uppercase;
+    margin-bottom: 2px;
+    opacity: 0.6;
+  }
+  .stepper-body {
+    background: var(--surface);
+    padding: 24px;
+  }
+  .stepper-panel { display: none; }
+  .stepper-panel.active { display: block; }
+  .stepper-panel h3 { margin-top: 0; }
+  .stepper-nav {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+  }
+  .nav-btn {
+    padding: 8px 18px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.15s;
+    font-family: var(--font-body);
+  }
+  .nav-btn:hover:not(:disabled) { background: var(--accent-light); border-color: var(--accent-mid); color: var(--accent); }
+  .nav-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .nav-btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+  .nav-btn.primary:hover { background: #0f2f5c; }
+  .step-dots {
+    display: flex;
+    gap: 6px;
+  }
+  .step-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--border2);
+    transition: background 0.2s;
+    cursor: pointer;
+  }
+  .step-dot.active { background: var(--accent); }
+
+  /* MARGINALIZATION CALCULATOR */
+  .calc-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    margin: 20px 0;
+  }
+  .calc-header {
+    background: var(--accent);
+    color: #fff;
+    padding: 14px 20px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .calc-header-icon {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    background: rgba(255,255,255,0.2);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 14px;
+  }
+  .calc-header-title { font-weight: 600; font-size: 14px; }
+  .calc-header-sub { font-size: 12px; opacity: 0.7; margin-top: 1px; }
+  .calc-controls {
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+    padding: 16px 20px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+  @media(max-width:480px) { .calc-controls { grid-template-columns: 1fr; } }
+  .ctrl-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--text2);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 8px;
+  }
+  .pill-row { display: flex; gap: 6px; }
+  .pill {
+    flex: 1;
+    padding: 7px 10px;
+    border-radius: 20px;
+    font-size: 13px;
+    font-weight: 500;
+    border: 1.5px solid var(--border);
+    background: var(--surface);
+    color: var(--text2);
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s;
+    user-select: none;
+  }
+  .pill.active {
+    background: var(--accent);
+    border-color: var(--accent);
+    color: #fff;
+  }
+  .calc-steps { padding: 20px; background: var(--surface); }
+  .calc-step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border);
+    animation: fadeIn 0.3s ease;
+  }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .calc-step:last-child { border-bottom: none; padding-bottom: 0; }
+  .step-badge {
+    width: 26px; height: 26px;
+    border-radius: 50%;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--text2);
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .step-badge.star {
+    background: var(--green);
+    border-color: var(--green);
+    color: #fff;
+    font-size: 13px;
+  }
+  .step-inner { flex: 1; }
+  .step-desc { font-size: 12px; color: var(--text3); margin-bottom: 6px; }
+  .step-expr {
+    font-family: var(--font-mono);
+    font-size: 13px;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 8px 12px;
+    color: var(--text);
+    line-height: 1.6;
+  }
+  .step-expr .val { color: var(--accent); font-weight: 500; }
+  .result-expr {
+    font-family: var(--font-mono);
+    font-size: 22px;
+    font-weight: 500;
+    color: var(--green);
+  }
+
+  /* CONTINGENCY TABLE */
+  .contingency-wrap {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    box-shadow: var(--shadow);
+    margin: 20px 0;
+  }
+  .ctable {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+  }
+  .ctable th {
+    background: var(--accent);
+    color: #fff;
+    padding: 10px 14px;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: center;
+    border: 1px solid rgba(255,255,255,0.1);
+  }
+  .ctable th.corner { background: #0f2f5c; }
+  .ctable td {
+    padding: 11px 14px;
+    text-align: center;
+    border: 1px solid var(--border);
+    font-family: var(--font-mono);
+    font-size: 13px;
+    transition: background 0.2s;
+  }
+  .ctable .row-label {
+    background: var(--accent-light);
+    color: var(--accent);
+    font-weight: 600;
+    font-family: var(--font-body);
+    font-size: 13px;
+  }
+  .ctable .total-row td, .ctable td.total-col {
+    background: var(--surface2);
+    color: var(--text2);
+    font-weight: 500;
+  }
+  .ctable .highlight-cell {
+    background: var(--amber-light) !important;
+    color: var(--amber);
+    font-weight: 600;
+  }
+  .ctable tr:hover td:not(.row-label):not(.total-col) { background: #fdfcf8; }
+
+  /* FORMULA BREAKDOWN */
+  .formula-breakdown {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 10px;
+    margin: 16px 0;
+  }
+  .formula-item {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 14px;
+  }
+  .fi-node { font-size: 12px; font-weight: 600; color: var(--accent); margin-bottom: 4px; }
+  .fi-cpt { font-size: 13px; font-family: var(--font-mono); color: var(--text); margin-bottom: 4px; }
+  .fi-params { font-size: 11px; color: var(--text3); }
+  .fi-num {
+    display: inline-block;
+    font-size: 13px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    color: var(--green);
+    background: var(--green-light);
+    padding: 2px 8px;
+    border-radius: 4px;
+    margin-top: 4px;
+  }
+
+  /* COMPARISON */
+  .comparison {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin: 20px 0;
+  }
+  @media(max-width:500px) { .comparison { grid-template-columns: 1fr; } }
+  .cmp-card {
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+  }
+  .cmp-header {
+    padding: 12px 16px;
+    font-size: 13px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .cmp-card.bad .cmp-header { background: var(--red-light); color: #7a2020; }
+  .cmp-card.good .cmp-header { background: var(--green-light); color: var(--green); }
+  .cmp-body {
+    padding: 14px 16px;
+    font-size: 14px;
+    color: var(--text2);
+  }
+  .cmp-big {
+    font-size: 32px;
+    font-weight: 600;
+    font-family: var(--font-mono);
+    display: block;
+    margin-bottom: 4px;
+  }
+  .cmp-card.bad .cmp-big { color: #c94040; }
+  .cmp-card.good .cmp-big { color: var(--green); }
+
+  /* FOOTER */
+  .footer {
+    background: var(--text);
+    color: rgba(255,255,255,0.5);
+    padding: 24px 32px;
+    text-align: center;
+    font-size: 13px;
+  }
+  .footer strong { color: rgba(255,255,255,0.8); }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="course-tag">Advanced Machine Learning · Lecture 4</div>
+    <h1>Bayesian Networks<br>Factorization &amp; Marginalization</h1>
+    <p class="subtitle">How probabilistic graphical models represent complex joint distributions compactly, and how to reason with hidden variables.</p>
+    <div class="header-meta">
+      <div class="meta-item"><div class="meta-dot"></div>Shobhit Johri</div>
+      <div class="meta-item"><div class="meta-dot"></div>Interactive lecture notes</div>
+      <div class="meta-item"><div class="meta-dot"></div>Burglar Alarm Example</div>
+    </div>
+  </div>
+</header>
+
+<nav class="toc-bar">
+  <div class="toc-inner">
+    <a href="#factorization" class="toc-link">1 · Factorization</a>
+    <a href="#cpts" class="toc-link">2 · CPT Tables</a>
+    <a href="#contingency" class="toc-link">3 · Contingency Tables</a>
+    <a href="#marginalization" class="toc-link">4 · Marginalization</a>
+    <a href="#calculator" class="toc-link">5 · Calculator</a>
+  </div>
+</nav>
+
+<main class="main">
+
+  <!-- SECTION 1: FACTORIZATION -->
+  <section class="section" id="factorization">
+    <div class="section-header">
+      <div class="section-num">1</div>
+      <div class="section-title">Factorization of the Joint Distribution</div>
+    </div>
+
+    <p>The full joint distribution over all variables in a Bayesian Network can be written as a <strong>product of individual conditional probability tables (CPTs)</strong>. This is called factorization — and it is the core algebraic identity that makes Bayesian Networks powerful.</p>
+
+    <div class="math-block"><span class="hi">P(JC, MC, A, E, B)</span> <span class="dim">= </span><span class="hi2">P(JC|A) · P(MC|A) · P(A|E,B) · P(E) · P(B)</span></div>
+
+    <p>Each factor corresponds to <strong>exactly one node's CPT</strong> — the probability of that node given only its direct parents in the graph. No approximation is involved; the factorized form is exactly equal to the full joint.</p>
+
+    <div class="callout info">
+      <p><strong>Key insight:</strong> The joint distribution of a Bayesian Network is the product of each node's conditional probability table given its parents. This is exact, not approximate.</p>
+    </div>
+
+    <h3>Derivation — Chain Rule + Conditional Independence</h3>
+    <p>Step through how we derive the factorized form:</p>
+
+    <div class="stepper" id="deriver">
+      <div class="stepper-tabs">
+        <div class="stab active" onclick="showTab('deriver',0,this)"><span class="stab-num">Step 1</span>Chain Rule</div>
+        <div class="stab" onclick="showTab('deriver',1,this)"><span class="stab-num">Step 2</span>Cond. Indep.</div>
+        <div class="stab" onclick="showTab('deriver',2,this)"><span class="stab-num">Step 3</span>Root Nodes</div>
+        <div class="stab" onclick="showTab('deriver',3,this)"><span class="stab-num">Step 4</span>Final Form</div>
+      </div>
+      <div class="stepper-body">
+        <div class="stepper-panel active" id="deriver-0">
+          <h3>Start: Apply the chain rule of probability</h3>
+          <p>The chain rule is always valid — no assumptions about the network structure are required. We simply pick a valid ordering of variables and write the joint as a product of conditionals:</p>
+          <div class="math-block">P(JC, MC, A, E, B)
+  = P(JC | MC, A, E, B)
+  × P(MC | A, E, B)
+  × P(A | E, B)
+  × P(E | B)
+  × P(B)</div>
+          <p>Every term on the right conditions on all variables that appear before it in the chosen ordering. This expression is <em>exact</em> by definition.</p>
+        </div>
+        <div class="stepper-panel" id="deriver-1">
+          <h3>Apply conditional independence from the graph structure</h3>
+          <p>The Bayesian Network graph tells us that JohnCalls and MaryCalls depend <em>only</em> on Alarm. Once Alarm is observed, nothing else affects them:</p>
+          <div class="math-block"><span class="hi">P(JC | MC, A, E, B)</span> → <span class="hi2">P(JC | A)</span>   ← only Alarm matters for JC
+<span class="hi">P(MC | A, E, B)</span>    → <span class="hi2">P(MC | A)</span>   ← only Alarm matters for MC</div>
+          <p>Substituting these simplifications:</p>
+          <div class="math-block">P(JC, MC, A, E, B)
+  = <span class="hi2">P(JC | A)</span>
+  × <span class="hi2">P(MC | A)</span>
+  × P(A | E, B)
+  × P(E | B)
+  × P(B)</div>
+        </div>
+        <div class="stepper-panel" id="deriver-2">
+          <h3>Simplify the root nodes</h3>
+          <p>Earthquake and Burglary are <strong>root nodes</strong> — they have no parents in the graph. There is no causal path between them, so they are marginally independent:</p>
+          <div class="math-block"><span class="hi">P(E | B)</span> → <span class="hi2">P(E)</span>   ← E and B are independent events</div>
+          <p>This is intuitive: whether a burglary happens does not influence whether an earthquake happens. They are separate causes with no shared parent.</p>
+        </div>
+        <div class="stepper-panel" id="deriver-3">
+          <h3>The fully factorized joint distribution</h3>
+          <p>Combining all simplifications from the previous steps:</p>
+          <div class="math-block">P(JC, MC, A, E, B)
+  = <span class="hi2">P(JC | A) · P(MC | A) · P(A | E,B) · P(E) · P(B)</span></div>
+          <p>In general, for any Bayesian Network with nodes X₁…Xₙ:</p>
+          <div class="math-block"><span class="hi">P(X₁, X₂, ..., Xₙ) = ∏ᵢ P(Xᵢ | Parents(Xᵢ))</span></div>
+          <div class="callout success">
+            <p><strong>Result:</strong> The full joint equals the product of all CPTs. Each node contributes exactly one factor, conditioned on its direct parents (or unconditionally if it is a root).</p>
+          </div>
+        </div>
+        <div class="stepper-nav">
+          <button class="nav-btn" id="deriver-prev" onclick="stepNav('deriver',-1)" disabled>← Previous</button>
+          <div class="step-dots" id="deriver-dots">
+            <div class="step-dot active" onclick="showTab('deriver',0)"></div>
+            <div class="step-dot" onclick="showTab('deriver',1)"></div>
+            <div class="step-dot" onclick="showTab('deriver',2)"></div>
+            <div class="step-dot" onclick="showTab('deriver',3)"></div>
+          </div>
+          <button class="nav-btn primary" id="deriver-next" onclick="stepNav('deriver',1)">Next →</button>
+        </div>
+      </div>
+    </div>
+
+    <h3>Parameter efficiency — click each node to include it</h3>
+    <p>Without network structure, a full joint over 5 binary variables needs <strong>2⁵ − 1 = 31 parameters</strong>. With the Bayesian Network structure, we need far fewer. Click each node to see how the count builds up.</p>
+
+    <div class="node-grid">
+      <div class="node-card" data-params="1" data-key="E" onclick="toggleNode(this)">
+        <div class="node-name">Earthquake</div>
+        <div class="node-cpt">P(E)</div>
+        <div class="node-params">+1 param</div>
+      </div>
+      <div class="node-card" data-params="1" data-key="B" onclick="toggleNode(this)">
+        <div class="node-name">Burglary</div>
+        <div class="node-cpt">P(B)</div>
+        <div class="node-params">+1 param</div>
+      </div>
+      <div class="node-card" data-params="4" data-key="A" onclick="toggleNode(this)">
+        <div class="node-name">Alarm</div>
+        <div class="node-cpt">P(A|E,B)</div>
+        <div class="node-params">+4 params</div>
+      </div>
+      <div class="node-card" data-params="2" data-key="JC" onclick="toggleNode(this)">
+        <div class="node-name">JohnCalls</div>
+        <div class="node-cpt">P(JC|A)</div>
+        <div class="node-params">+2 params</div>
+      </div>
+      <div class="node-card" data-params="2" data-key="MC" onclick="toggleNode(this)">
+        <div class="node-name">MaryCalls</div>
+        <div class="node-cpt">P(MC|A)</div>
+        <div class="node-params">+2 params</div>
+      </div>
+    </div>
+
+    <div class="param-display">
+      <div class="param-num-wrap">
+        <div class="param-num" id="paramNum">0</div>
+        <div class="param-label">params selected</div>
+      </div>
+      <div class="param-bar-section">
+        <div class="param-bar-legend">
+          <span>Bayesian Network</span><span>Full joint (31)</span>
+        </div>
+        <div class="param-bar-bg">
+          <div class="param-bar-fill" id="paramFill" style="width:0%"></div>
+          <div class="param-bar-marker"></div>
+        </div>
+        <div class="param-equation" id="paramEq">Select nodes above to build the equation</div>
+      </div>
+    </div>
+
+    <div class="callout success" id="paramWin" style="display:none;margin-top:14px">
+      <p><strong>10 parameters</strong> fully encode what the naive joint table needs 31 parameters to represent. The Bayesian Network achieves a 3× compression — and this advantage scales dramatically with network size.</p>
+    </div>
+
+    <h3>Parameter count breakdown</h3>
+    <div class="formula-breakdown">
+      <div class="formula-item">
+        <div class="fi-node">Earthquake</div>
+        <div class="fi-cpt">P(E)</div>
+        <div class="fi-params">1 binary variable, 1 free param</div>
+        <div class="fi-num">1</div>
+      </div>
+      <div class="formula-item">
+        <div class="fi-node">Burglary</div>
+        <div class="fi-cpt">P(B)</div>
+        <div class="fi-params">1 binary variable, 1 free param</div>
+        <div class="fi-num">1</div>
+      </div>
+      <div class="formula-item">
+        <div class="fi-node">Alarm</div>
+        <div class="fi-cpt">P(A | E, B)</div>
+        <div class="fi-params">2 binary parents → 4 rows, 1 free each</div>
+        <div class="fi-num">4</div>
+      </div>
+      <div class="formula-item">
+        <div class="fi-node">JohnCalls</div>
+        <div class="fi-cpt">P(JC | A)</div>
+        <div class="fi-params">1 binary parent → 2 rows, 1 free each</div>
+        <div class="fi-num">2</div>
+      </div>
+      <div class="formula-item">
+        <div class="fi-node">MaryCalls</div>
+        <div class="fi-cpt">P(MC | A)</div>
+        <div class="fi-params">1 binary parent → 2 rows, 1 free each</div>
+        <div class="fi-num">2</div>
+      </div>
+    </div>
+
+    <div class="comparison">
+      <div class="cmp-card bad">
+        <div class="cmp-header">✕ Without structure</div>
+        <div class="cmp-body">
+          <span class="cmp-big">31</span>
+          2⁵ − 1 parameters needed for the full joint distribution. Grows exponentially with variables.
+        </div>
+      </div>
+      <div class="cmp-card good">
+        <div class="cmp-header">✓ With Bayesian Network</div>
+        <div class="cmp-body">
+          <span class="cmp-big">10</span>
+          1 + 1 + 4 + 2 + 2 = 10 parameters. Encodes the exact same distribution.
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- SECTION 2: CPTs -->
+  <section class="section" id="cpts">
+    <div class="section-header">
+      <div class="section-num">2</div>
+      <div class="section-title">Conditional Probability Tables</div>
+    </div>
+
+    <p>Each node in a Bayesian Network has one CPT. For root nodes (no parents), it is an unconditional prior. For non-root nodes, each row corresponds to one configuration of the parent variables, and the row must sum to 1 — so one value per row is free.</p>
+
+    <h3>Root nodes — priors only</h3>
+    <div class="two-col">
+      <div class="table-card">
+        <table>
+          <tr><th>Event</th><th>Probability</th></tr>
+          <tr><td class="label-cell">E = true</td><td>0.002</td></tr>
+          <tr><td class="label-cell">E = false</td><td>0.998</td></tr>
+        </table>
+        <div class="table-caption">P(Earthquake) — 0.2% base rate · 1 free parameter</div>
+      </div>
+      <div class="table-card">
+        <table>
+          <tr><th>Event</th><th>Probability</th></tr>
+          <tr><td class="label-cell">B = true</td><td>0.001</td></tr>
+          <tr><td class="label-cell">B = false</td><td>0.999</td></tr>
+        </table>
+        <div class="table-caption">P(Burglary) — 0.1% base rate · 1 free parameter</div>
+      </div>
+    </div>
+
+    <h3>Alarm — conditioned on two parents</h3>
+    <p>With two binary parents (E, B), there are 2² = 4 parent configurations. Each row sums to 1. The highlighted row shows the case where both causes are active — the alarm is very likely.</p>
+    <div class="table-card">
+      <table>
+        <tr><th>E</th><th>B</th><th>P(A = true | E, B)</th><th>P(A = false | E, B)</th></tr>
+        <tr class="row-hi"><td>true</td><td>true</td><td>0.950</td><td>0.050</td></tr>
+        <tr><td>true</td><td>false</td><td>0.290</td><td>0.710</td></tr>
+        <tr><td>false</td><td>true</td><td>0.940</td><td>0.060</td></tr>
+        <tr><td>false</td><td>false</td><td>0.001</td><td>0.999</td></tr>
+      </table>
+      <div class="table-caption">P(Alarm | E, B) — highlighted row = both causes active · 4 free parameters</div>
+    </div>
+
+    <h3>JohnCalls &amp; MaryCalls — conditioned on Alarm only</h3>
+    <p>Each depends only on whether the alarm rang. Conditional independence means knowing E, B, or Mary's behavior gives no extra information about John once Alarm is known.</p>
+    <div class="two-col">
+      <div class="table-card">
+        <table>
+          <tr><th>A</th><th>P(JC=true)</th><th>P(JC=false)</th></tr>
+          <tr><td>true</td><td>0.90</td><td>0.10</td></tr>
+          <tr><td>false</td><td>0.05</td><td>0.95</td></tr>
+        </table>
+        <div class="table-caption">P(JohnCalls | A) — 2 free parameters</div>
+      </div>
+      <div class="table-card">
+        <table>
+          <tr><th>A</th><th>P(MC=true)</th><th>P(MC=false)</th></tr>
+          <tr><td>true</td><td>0.70</td><td>0.30</td></tr>
+          <tr><td>false</td><td>0.01</td><td>0.99</td></tr>
+        </table>
+        <div class="table-caption">P(MaryCalls | A) — 2 free parameters</div>
+      </div>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- SECTION 3: CONTINGENCY TABLE -->
+  <section class="section" id="contingency">
+    <div class="section-header">
+      <div class="section-num">3</div>
+      <div class="section-title">Understanding CPTs via Contingency Tables</div>
+    </div>
+
+    <p>A <strong>contingency table</strong> (also called a cross-tabulation) shows the joint frequency or probability for combinations of two or more variables. In Bayesian Networks, CPTs are a form of conditional contingency table — they show P(child | parent combination).</p>
+
+    <h3>Contingency table for P(Alarm | Burglary, Earthquake)</h3>
+    <p>Rows = Alarm state, Columns = (Earthquake, Burglary) configuration. Each cell shows P(A | E, B). The <span style="background:var(--amber-light);color:var(--amber);padding:1px 6px;border-radius:4px;font-family:var(--font-mono);font-size:13px">0.940</span> cell highlights the most common real-world scenario — burglary without earthquake.</p>
+
+    <div class="contingency-wrap">
+      <table class="ctable">
+        <tr>
+          <th class="corner">Alarm \ (E, B)</th>
+          <th>E=true, B=true</th>
+          <th>E=true, B=false</th>
+          <th>E=false, B=true</th>
+          <th>E=false, B=false</th>
+        </tr>
+        <tr>
+          <td class="row-label">A = true</td>
+          <td>0.950</td>
+          <td>0.290</td>
+          <td class="highlight-cell">0.940</td>
+          <td>0.001</td>
+        </tr>
+        <tr>
+          <td class="row-label">A = false</td>
+          <td>0.050</td>
+          <td>0.710</td>
+          <td>0.060</td>
+          <td>0.999</td>
+        </tr>
+        <tr class="total-row">
+          <td class="row-label">Column sum</td>
+          <td>1.000</td>
+          <td>1.000</td>
+          <td>1.000</td>
+          <td>1.000</td>
+        </tr>
+      </table>
+    </div>
+
+    <div class="callout warning">
+      <p><strong>Important:</strong> Each column sums to 1.0. CPT rows are conditional distributions — given a fixed parent configuration, the probabilities across all child states must sum to 1. This is why a 4-row CPT has only 4 free parameters, not 8.</p>
+    </div>
+
+    <h3>Contingency table for P(JohnCalls | Alarm) × P(Alarm | Burglary, Earthquake)</h3>
+    <p>This joint contingency table shows the probability that John calls <em>and</em> the alarm is in each state, given Burglary and Earthquake. Reading across a row of (E=false, B=true):</p>
+
+    <div class="contingency-wrap">
+      <table class="ctable">
+        <tr>
+          <th class="corner">(E, B) \ (JC, A)</th>
+          <th>JC=T, A=T</th>
+          <th>JC=F, A=T</th>
+          <th>JC=T, A=F</th>
+          <th>JC=F, A=F</th>
+          <th>P(JC=T)</th>
+        </tr>
+        <tr>
+          <td class="row-label">E=true, B=true</td>
+          <td>0.855</td>
+          <td>0.095</td>
+          <td>0.003</td>
+          <td>0.048</td>
+          <td>0.858</td>
+        </tr>
+        <tr>
+          <td class="row-label">E=true, B=false</td>
+          <td>0.261</td>
+          <td>0.029</td>
+          <td>0.036</td>
+          <td>0.675</td>
+          <td>0.297</td>
+        </tr>
+        <tr class="row-hi">
+          <td class="row-label">E=false, B=true</td>
+          <td>0.846</td>
+          <td>0.094</td>
+          <td>0.003</td>
+          <td>0.057</td>
+          <td class="highlight-cell">0.849</td>
+        </tr>
+        <tr>
+          <td class="row-label">E=false, B=false</td>
+          <td>0.001</td>
+          <td>0.000</td>
+          <td>0.050</td>
+          <td>0.949</td>
+          <td>0.051</td>
+        </tr>
+      </table>
+    </div>
+
+    <p>The <strong>last column</strong> is the marginalized probability P(JC=true | E, B) — obtained by summing across the A states (columns 1 and 3). This is exactly what marginalization computes, shown as table arithmetic.</p>
+  </section>
+
+  <hr>
+
+  <!-- SECTION 4: MARGINALIZATION -->
+  <section class="section" id="marginalization">
+    <div class="section-header">
+      <div class="section-num">4</div>
+      <div class="section-title">Marginalization</div>
+    </div>
+
+    <p>When we want a probability but some intermediate variable is <strong>not observed</strong>, we use marginalization: sum over all possible values that unobserved variable could take. Each term in the sum is one "possible world."</p>
+
+    <div class="math-block">P(X) = <span class="hi">Σ_y</span>  P(X, Y=y) = <span class="hi">Σ_y</span>  P(X | Y=y) · P(Y=y)</div>
+
+    <div class="callout info">
+      <p><strong>Rule:</strong> If a variable is not observed, sum over all its possible values. The total probability is the weighted average of the probability in each "world," weighted by the probability of that world.</p>
+    </div>
+
+    <h3>The alarm example</h3>
+    <p>We want to compute P(JohnCalls | Burglary, Earthquake). But JohnCalls depends on Alarm, and we don't observe Alarm. Alarm can be true or false, so:</p>
+
+    <div class="math-block">P(JC | B, E)
+  = P(JC | A=<span class="hi">true</span>) · P(A=<span class="hi">true</span> | B, E)
+  + P(JC | A=<span class="hi2">false</span>) · P(A=<span class="hi2">false</span> | B, E)</div>
+
+    <p>The first term is the "alarm rang" world; the second is the "alarm silent" world. We weight each by its probability given the evidence.</p>
+
+    <h3>General formula</h3>
+    <div class="math-block">P(JC=t | B, E)
+  = <span class="hi">0.90</span> · P(A=t | B, E)  ← alarm rang, John likely calls
+  + <span class="hi2">0.05</span> · P(A=f | B, E)  ← alarm silent, John might still call</div>
+
+    <p>The values 0.90 and 0.05 come directly from the JohnCalls CPT. The alarm probability P(A | B, E) comes from the Alarm CPT. This is exactly why factorization and marginalization work together: the factorized CPTs are the lookup tables we use when marginalizing.</p>
+
+    <div class="callout success">
+      <p><strong>Connection:</strong> Marginalization uses the factorized CPTs as its building blocks. Factorization tells us <em>how</em> the joint splits; marginalization tells us <em>how</em> to handle unobserved variables in the chain.</p>
+    </div>
+  </section>
+
+  <hr>
+
+  <!-- SECTION 5: INTERACTIVE CALCULATOR -->
+  <section class="section" id="calculator">
+    <div class="section-header">
+      <div class="section-num">5</div>
+      <div class="section-title">Interactive Marginalization Calculator</div>
+    </div>
+
+    <p>Choose the state of Burglary (B) and Earthquake (E) below. The calculator will work through all four steps of the marginalization to compute P(JohnCalls = true | B, E).</p>
+
+    <div class="calc-card">
+      <div class="calc-header">
+        <div class="calc-header-icon">∑</div>
+        <div>
+          <div class="calc-header-title">P(JohnCalls = true | B, E) via marginalization over Alarm</div>
+          <div class="calc-header-sub">Select evidence below to compute the answer step by step</div>
+        </div>
+      </div>
+      <div class="calc-controls">
+        <div>
+          <div class="ctrl-label">Burglary (B)</div>
+          <div class="pill-row">
+            <div class="pill active" onclick="setVar('b','t',this)">B = true</div>
+            <div class="pill" onclick="setVar('b','f',this)">B = false</div>
+          </div>
+        </div>
+        <div>
+          <div class="ctrl-label">Earthquake (E)</div>
+          <div class="pill-row">
+            <div class="pill active" onclick="setVar('e','f',this)">E = false</div>
+            <div class="pill" onclick="setVar('e','t',this)">E = true</div>
+          </div>
+        </div>
+      </div>
+      <div class="calc-steps" id="calcOutput"></div>
+    </div>
+
+    <h3>What does this result mean?</h3>
+    <p id="interpText">With a burglary occurring and no earthquake, there is an 84.9% chance John will call. This makes intuitive sense: the burglary makes the alarm very likely to ring (94%), and when the alarm rings John calls 90% of the time. Even if the alarm doesn't ring, John might still call (5%).</p>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <strong>Bayesian Networks — Factorization &amp; Marginalization</strong><br>
+  Advanced Machine Learning · Interactive Lecture Notes · Shobhit Johri
+</footer>
+
+<script>
+  /* ── STEPPER ── */
+  const stepperState = {};
+
+  function showTab(id, idx, tabEl) {
+    const panels = document.querySelectorAll(`#${id} .stepper-panel`);
+    const tabs = document.querySelectorAll(`#${id} .stab`);
+    const dots = document.querySelectorAll(`#${id}-dots .step-dot`);
+    panels.forEach((p,i) => p.classList.toggle('active', i === idx));
+    tabs.forEach((t,i) => t.classList.toggle('active', i === idx));
+    if (dots) dots.forEach((d,i) => d.classList.toggle('active', i === idx));
+    stepperState[id] = idx;
+    const prev = document.getElementById(`${id}-prev`);
+    const next = document.getElementById(`${id}-next`);
+    if (prev) prev.disabled = idx === 0;
+    if (next) { next.disabled = idx === panels.length - 1; }
+  }
+
+  function stepNav(id, dir) {
+    const current = stepperState[id] || 0;
+    const panels = document.querySelectorAll(`#${id} .stepper-panel`);
+    const next = Math.min(Math.max(0, current + dir), panels.length - 1);
+    showTab(id, next);
+  }
+
+  showTab('deriver', 0);
+
+  /* ── NODE SELECTOR ── */
+  let totalParams = 0;
+  const nodeKeys = [];
+
+  function toggleNode(el) {
+    const params = parseInt(el.dataset.params);
+    const key = el.dataset.key;
+    el.classList.toggle('active');
+    if (el.classList.contains('active')) {
+      totalParams += params;
+      nodeKeys.push(key);
+    } else {
+      totalParams -= params;
+      nodeKeys.splice(nodeKeys.indexOf(key), 1);
+    }
+    document.getElementById('paramNum').textContent = totalParams;
+    document.getElementById('paramFill').style.width = Math.min(100, (totalParams / 31) * 100) + '%';
+
+    const eqParts = {
+      E: 'P(E)', B: 'P(B)', A: 'P(A|E,B)', JC: 'P(JC|A)', MC: 'P(MC|A)'
+    };
+    const order = ['E','B','A','JC','MC'];
+    let eqHtml = 'Product: ';
+    if (nodeKeys.length === 0) {
+      eqHtml = 'Select nodes above to build the equation';
+    } else {
+      eqHtml = order.filter(k => nodeKeys.includes(k)).map(k => `<span class="eq-part lit">${eqParts[k]}</span>`).join(' × ');
+      eqHtml += ` = <strong>${totalParams}</strong>`;
+    }
+    document.getElementById('paramEq').innerHTML = eqHtml;
+    document.getElementById('paramWin').style.display = totalParams === 10 ? 'block' : 'none';
+  }
+
+  /* ── CALCULATOR ── */
+  const ALARM_CPT = { tt: 0.95, tf: 0.29, ft: 0.94, ff: 0.001 };
+  const JC_CPT = { t: 0.90, f: 0.05 };
+  let bState = 't', eState = 'f';
+
+  function setVar(variable, val, el) {
+    if (variable === 'b') {
+      bState = val;
+      document.querySelectorAll('.pill').forEach(p => {
+        if (p.onclick && p.onclick.toString().includes("'b'")) p.classList.remove('active');
+      });
+    } else {
+      eState = val;
+      document.querySelectorAll('.pill').forEach(p => {
+        if (p.onclick && p.onclick.toString().includes("'e'")) p.classList.remove('active');
+      });
+    }
+    el.classList.add('active');
+    renderCalc();
+  }
+
+  function renderCalc() {
+    const pAt = ALARM_CPT[eState + bState];
+    const pAf = (1 - pAt);
+    const pJCt = JC_CPT.t;
+    const pJCf = JC_CPT.f;
+    const term1 = pJCt * pAt;
+    const term2 = pJCf * pAf;
+    const result = term1 + term2;
+    const bLbl = bState === 't' ? 'true' : 'false';
+    const eLbl = eState === 't' ? 'true' : 'false';
+    const alarmRow = { tt:'E=true, B=true', tf:'E=true, B=false', ft:'E=false, B=true', ff:'E=false, B=false' };
+
+    document.getElementById('calcOutput').innerHTML = `
+      <div class="calc-step">
+        <div class="step-badge">1</div>
+        <div class="step-inner">
+          <div class="step-desc">Alarm is not observed → marginalize over both its states</div>
+          <div class="step-expr">P(JC=t | B=${bLbl}, E=${eLbl})
+  = P(JC=t|A=t)·P(A=t|B,E) + P(JC=t|A=f)·P(A=f|B,E)</div>
+        </div>
+      </div>
+      <div class="calc-step">
+        <div class="step-badge">2</div>
+        <div class="step-inner">
+          <div class="step-desc">Look up P(A=true | ${alarmRow[eState+bState]}) from the Alarm CPT</div>
+          <div class="step-expr">P(A=true  | B=${bLbl}, E=${eLbl}) = <span class="val">${pAt.toFixed(3)}</span>
+P(A=false | B=${bLbl}, E=${eLbl}) = <span class="val">${pAf.toFixed(3)}</span></div>
+        </div>
+      </div>
+      <div class="calc-step">
+        <div class="step-badge">3</div>
+        <div class="step-inner">
+          <div class="step-desc">Look up P(JC=true | A) from the JohnCalls CPT and substitute all values</div>
+          <div class="step-expr">= <span class="val">${pJCt.toFixed(2)}</span> × <span class="val">${pAt.toFixed(3)}</span>  +  <span class="val">${pJCf.toFixed(2)}</span> × <span class="val">${pAf.toFixed(3)}</span></div>
+        </div>
+      </div>
+      <div class="calc-step">
+        <div class="step-badge">4</div>
+        <div class="step-inner">
+          <div class="step-desc">Compute each term</div>
+          <div class="step-expr">${term1.toFixed(4)}  +  ${term2.toFixed(4)}</div>
+        </div>
+      </div>
+      <div class="calc-step">
+        <div class="step-badge star">★</div>
+        <div class="step-inner">
+          <div class="step-desc">Final answer</div>
+          <div class="result-expr">P(JC=true | B=${bLbl}, E=${eLbl}) = ${result.toFixed(4)}</div>
+        </div>
+      </div>
+    `;
+
+    // Update interpretation text
+    const pct = (result * 100).toFixed(1);
+    const alarmPct = (pAt * 100).toFixed(0);
+    let interp = `With B=${bLbl} and E=${eLbl}, there is a <strong>${pct}%</strong> probability that John will call. `;
+    if (bState === 't' && eState === 'f') interp += `The burglary makes the alarm very likely (${alarmPct}%), and with the alarm ringing John calls 90% of the time. Even if the alarm somehow stays silent, John still calls 5% of the time.`;
+    else if (bState === 'f' && eState === 'f') interp += `With no cause present, the alarm is extremely unlikely (0.1%), so John's 5% false-call rate dominates the result.`;
+    else if (bState === 't' && eState === 't') interp += `Both causes are present, making the alarm very likely (${alarmPct}%) and John's call probability high.`;
+    else interp += `An earthquake alone (without burglary) makes the alarm possible (${alarmPct}%), leading to a moderate call probability.`;
+    document.getElementById('interpText').innerHTML = interp;
+  }
+
+  // Pill click workaround — use group detection by data
+  document.querySelectorAll('.pill').forEach(pill => {
+    pill._origClick = pill.onclick;
+  });
+
+  renderCalc();
+</script>
+
+</body>
+</html>
