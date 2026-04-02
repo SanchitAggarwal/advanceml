@@ -1,0 +1,1222 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Bayesian Networks — Worksheet</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Mono:wght@400;500&family=Manrope:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --ink: #1a1a2e;
+    --ink-mid: #3d3d5c;
+    --ink-soft: #6b6b8a;
+    --ink-faint: #9898b0;
+    --bg: #f7f6f2;
+    --surface: #ffffff;
+    --surface2: #f0efe9;
+    --accent: #2563c4;
+    --accent-light: #e8eeff;
+    --accent-mid: #3b72e0;
+    --teal: #0d7f6e;
+    --teal-light: #e0f5f1;
+    --amber: #b46a0e;
+    --amber-light: #fef3e0;
+    --coral: #c13d2a;
+    --coral-light: #fdecea;
+    --green: #2d7a3a;
+    --green-light: #e8f5ea;
+    --border: rgba(0,0,0,0.08);
+    --radius: 12px;
+    --radius-sm: 8px;
+  }
+
+  body {
+    font-family: 'Manrope', sans-serif;
+    background: var(--bg);
+    color: var(--ink);
+    line-height: 1.7;
+    font-size: 15px;
+    padding: 0;
+  }
+
+  .page-header {
+    background: var(--ink);
+    color: white;
+    padding: 3rem 2rem 2.5rem;
+    position: relative;
+    overflow: hidden;
+  }
+  .page-header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 300px; height: 300px;
+    border-radius: 50%;
+    background: rgba(37,99,196,0.25);
+  }
+  .page-header::after {
+    content: '';
+    position: absolute;
+    bottom: -80px; left: 40%;
+    width: 200px; height: 200px;
+    border-radius: 50%;
+    background: rgba(13,127,110,0.2);
+  }
+  .page-header-inner {
+    max-width: 900px;
+    margin: 0 auto;
+    position: relative;
+    z-index: 1;
+  }
+  .header-tag {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.5);
+    margin-bottom: 0.8rem;
+  }
+  .page-header h1 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(1.8rem, 4vw, 2.8rem);
+    font-weight: 400;
+    line-height: 1.2;
+    margin-bottom: 0.75rem;
+  }
+  .page-header p {
+    font-size: 14px;
+    color: rgba(255,255,255,0.65);
+    max-width: 560px;
+  }
+  .header-pills {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-top: 1.5rem;
+  }
+  .header-pill {
+    font-size: 11px;
+    font-weight: 600;
+    padding: 4px 12px;
+    border-radius: 20px;
+    border: 1px solid rgba(255,255,255,0.2);
+    color: rgba(255,255,255,0.75);
+  }
+
+  .content {
+    max-width: 900px;
+    margin: 0 auto;
+    padding: 2.5rem 1.5rem 4rem;
+  }
+
+  .section-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.5rem;
+  }
+  h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.5rem;
+    font-weight: 400;
+    color: var(--ink);
+    margin-bottom: 1.25rem;
+    padding-bottom: 0.6rem;
+    border-bottom: 1.5px solid var(--border);
+  }
+  h3 {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--ink);
+    margin-bottom: 0.6rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.5rem;
+    margin-bottom: 1.25rem;
+  }
+  .card-teal { border-left: 3px solid var(--teal); background: var(--teal-light); }
+  .card-accent { border-left: 3px solid var(--accent); background: var(--accent-light); }
+  .card-amber { border-left: 3px solid var(--amber); background: var(--amber-light); }
+  .card-coral { border-left: 3px solid var(--coral); background: var(--coral-light); }
+
+  .definition {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-left: 3px solid var(--accent);
+    border-radius: var(--radius-sm);
+    padding: 1rem 1.25rem;
+    margin-bottom: 1rem;
+  }
+  .definition .def-label {
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 0.3rem;
+  }
+
+  .key-box {
+    background: var(--ink);
+    color: white;
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1.25rem;
+    font-size: 14px;
+  }
+  .key-box .kb-label {
+    font-size: 10px;
+    letter-spacing: 0.12em;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: rgba(255,255,255,0.45);
+    margin-bottom: 0.5rem;
+  }
+
+  .section-block {
+    margin-bottom: 3rem;
+  }
+
+  /* --- INTERACTIVE NETWORK VISUALIZER --- */
+  .net-container {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem;
+    margin-bottom: 1.25rem;
+  }
+  .net-svg-wrap {
+    width: 100%;
+    overflow-x: auto;
+  }
+  svg.network { display: block; margin: 0 auto; }
+
+  /* --- INTERACTIVE SLIDERS --- */
+  .sim-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+    margin-bottom: 1rem;
+  }
+  @media(max-width: 600px) { .sim-grid { grid-template-columns: 1fr; } }
+  .sim-card {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+  }
+  .sim-card label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--ink-mid);
+    display: block;
+    margin-bottom: 6px;
+  }
+  .sim-card input[type=range] {
+    width: 100%;
+    accent-color: var(--accent);
+  }
+  .sim-card .val {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    color: var(--accent);
+    font-weight: 500;
+    margin-top: 4px;
+  }
+  .result-row {
+    display: flex;
+    align-items: baseline;
+    gap: 10px;
+    margin-top: 0.5rem;
+  }
+  .result-label {
+    font-size: 12px;
+    color: var(--ink-soft);
+    min-width: 160px;
+  }
+  .result-bar-wrap {
+    flex: 1;
+    background: var(--surface2);
+    border-radius: 20px;
+    height: 10px;
+    overflow: hidden;
+  }
+  .result-bar {
+    height: 100%;
+    border-radius: 20px;
+    background: var(--accent);
+    transition: width 0.3s ease;
+  }
+  .result-num {
+    font-family: 'DM Mono', monospace;
+    font-size: 13px;
+    font-weight: 500;
+    min-width: 46px;
+    text-align: right;
+    color: var(--ink);
+  }
+  .result-bar.teal { background: var(--teal); }
+  .result-bar.amber { background: var(--amber); }
+
+  /* --- SAMPLING SIM --- */
+  .sample-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 5px;
+    margin: 0.75rem 0;
+    min-height: 60px;
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 10px;
+  }
+  .sample-dot {
+    width: 16px; height: 16px;
+    border-radius: 50%;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 8px;
+    font-weight: 700;
+    color: white;
+    animation: popIn 0.2s ease;
+  }
+  @keyframes popIn { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+  .dot-keep { background: var(--teal); }
+  .dot-discard { background: #ccc; }
+
+  .btn {
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    font-weight: 600;
+    padding: 8px 18px;
+    border-radius: var(--radius-sm);
+    border: 1.5px solid var(--ink);
+    background: var(--ink);
+    color: white;
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  .btn:hover { background: var(--accent); border-color: var(--accent); }
+  .btn-outline {
+    background: transparent;
+    color: var(--ink);
+    border-color: var(--border);
+  }
+  .btn-outline:hover { background: var(--surface2); color: var(--ink); border-color: var(--ink-faint); }
+  .btn-sm { font-size: 12px; padding: 5px 12px; }
+
+  /* --- EXERCISES --- */
+  .exercise {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1.25rem 1.5rem;
+    margin-bottom: 1rem;
+    position: relative;
+  }
+  .exercise-num {
+    position: absolute;
+    top: -1px; left: -1px;
+    background: var(--ink);
+    color: white;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: var(--radius) 0 var(--radius-sm) 0;
+  }
+  .exercise-body {
+    margin-top: 0.5rem;
+    padding-top: 0.75rem;
+    padding-left: 0.5rem;
+  }
+  .exercise p { margin-bottom: 0.75rem; font-size: 14px; }
+
+  .option-list { list-style: none; margin: 0.5rem 0; }
+  .option-list li {
+    margin-bottom: 6px;
+  }
+  .option-list label {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--border);
+    transition: background 0.12s;
+  }
+  .option-list label:hover { background: var(--surface2); }
+  .option-list input[type=radio] { margin-top: 3px; accent-color: var(--accent); flex-shrink: 0; }
+  .option-list label.correct { background: var(--green-light); border-color: var(--green); }
+  .option-list label.wrong { background: var(--coral-light); border-color: var(--coral); }
+
+  .feedback-box {
+    display: none;
+    margin-top: 0.75rem;
+    padding: 0.75rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: 13px;
+  }
+  .feedback-box.correct { display: block; background: var(--green-light); color: var(--green); border: 1px solid rgba(45,122,58,0.2); }
+  .feedback-box.wrong { display: block; background: var(--coral-light); color: var(--coral); border: 1px solid rgba(193,61,42,0.2); }
+
+  textarea.student-answer {
+    width: 100%;
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem;
+    font-family: 'Manrope', sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    resize: vertical;
+    background: var(--surface2);
+    color: var(--ink);
+    min-height: 80px;
+    margin-top: 0.5rem;
+    transition: border-color 0.15s;
+  }
+  textarea.student-answer:focus { outline: none; border-color: var(--accent); background: var(--surface); }
+
+  .check-btn { margin-top: 0.75rem; }
+
+  /* formula */
+  .formula-box {
+    background: var(--surface2);
+    border-radius: var(--radius-sm);
+    padding: 1rem;
+    text-align: center;
+    font-family: 'DM Mono', monospace;
+    font-size: 14px;
+    color: var(--ink-mid);
+    margin: 0.75rem 0;
+    line-height: 1.8;
+  }
+  .formula-box em { font-style: italic; }
+
+  /* scoreboard */
+  .score-banner {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    background: var(--ink);
+    color: white;
+    padding: 10px 18px;
+    border-radius: 30px;
+    font-size: 13px;
+    font-weight: 600;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .score-count { font-family: 'DM Mono', monospace; font-size: 18px; color: #7dd3b8; }
+
+  /* info callout */
+  .callout {
+    display: flex;
+    gap: 12px;
+    padding: 1rem 1.25rem;
+    border-radius: var(--radius-sm);
+    margin-bottom: 1rem;
+    background: var(--accent-light);
+    border: 1px solid rgba(37,99,196,0.15);
+  }
+  .callout-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
+  .callout-text { font-size: 13px; color: var(--ink-mid); }
+
+  /* flow arrows */
+  .flow {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+    font-size: 13px;
+  }
+  .flow-node {
+    background: var(--ink);
+    color: white;
+    padding: 5px 14px;
+    border-radius: 20px;
+    font-weight: 600;
+    font-size: 12px;
+  }
+  .flow-arrow { color: var(--accent); font-size: 18px; }
+
+  /* table */
+  .cpt-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    font-family: 'DM Mono', monospace;
+    margin: 0.75rem 0;
+  }
+  .cpt-table th {
+    background: var(--ink);
+    color: white;
+    padding: 7px 12px;
+    text-align: center;
+    font-weight: 600;
+    font-size: 11px;
+    letter-spacing: 0.05em;
+  }
+  .cpt-table td {
+    padding: 7px 12px;
+    border-bottom: 1px solid var(--border);
+    text-align: center;
+  }
+  .cpt-table tr:nth-child(even) td { background: var(--surface2); }
+
+  /* divider */
+  .divider {
+    border: none;
+    border-top: 1px solid var(--border);
+    margin: 2.5rem 0;
+  }
+
+  /* progress bar */
+  .progress-wrap { margin-bottom: 2rem; }
+  .progress-label { font-size: 12px; color: var(--ink-soft); margin-bottom: 6px; display: flex; justify-content: space-between; }
+  .progress-track { background: var(--surface2); border-radius: 20px; height: 6px; }
+  .progress-fill { height: 100%; border-radius: 20px; background: var(--teal); width: 0%; transition: width 0.4s ease; }
+
+  .hidden { display: none !important; }
+
+  /* reveal answer */
+  .reveal-btn {
+    font-size: 12px;
+    color: var(--ink-soft);
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-decoration: underline;
+    margin-top: 0.5rem;
+    font-family: 'Manrope', sans-serif;
+  }
+  .reveal-btn:hover { color: var(--accent); }
+  .reveal-text {
+    display: none;
+    background: var(--green-light);
+    border: 1px solid rgba(45,122,58,0.2);
+    border-radius: var(--radius-sm);
+    padding: 0.75rem 1rem;
+    font-size: 13px;
+    color: var(--green);
+    margin-top: 0.5rem;
+  }
+  .reveal-text.shown { display: block; }
+</style>
+</head>
+<body>
+
+<div class="page-header">
+  <div class="page-header-inner">
+    <div class="header-tag">Advanced Machine Learning · Worksheet</div>
+    <h1>Bayesian Networks:<br>Inference, Sampling &amp; Limitations</h1>
+    <p>Interactive exercises to build intuition for belief propagation, forward sampling, and the practical boundaries of Bayesian reasoning.</p>
+    <div class="header-pills">
+      <span class="header-pill">Assumes: BN structure &amp; CPTs</span>
+      <span class="header-pill">Assumes: d-separation</span>
+      <span class="header-pill">Assumes: conditional independence</span>
+    </div>
+  </div>
+</div>
+
+<div class="content">
+
+  <div class="progress-wrap">
+    <div class="progress-label">
+      <span>Exercise progress</span>
+      <span id="prog-text">0 / 8 answered</span>
+    </div>
+    <div class="progress-track"><div class="progress-fill" id="prog-fill"></div></div>
+  </div>
+
+  <!-- ===== SECTION 1: INFERENCE ===== -->
+  <div class="section-block">
+    <div class="section-label">Section 1</div>
+    <h2>What is Inference?</h2>
+
+    <div class="definition">
+      <div class="def-label">Definition</div>
+      <strong>Inference</strong> in a Bayesian Network means computing the posterior probability of some <em>query variables</em> given observed values of <em>evidence variables</em>.
+      <div class="formula-box" style="margin-top:0.75rem;">P(Query | Evidence) = ?</div>
+    </div>
+
+    <div class="callout">
+      <span class="callout-icon">💡</span>
+      <span class="callout-text">The key challenge: variables that are <em>not observed</em> must be <strong>summed out</strong> (marginalized). This is what makes inference non-trivial — and potentially expensive.</span>
+    </div>
+
+    <div class="card card-accent">
+      <h3>The Burglar Alarm Network</h3>
+      <p style="font-size:13px; color:var(--ink-mid); margin-bottom:1rem;">All interactive examples in this worksheet use this classic 5-variable network.</p>
+      <div style="text-align:center;">
+        <svg class="network" width="420" height="240" viewBox="0 0 420 240" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="arr" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+              <polygon points="0 0, 8 3, 0 6" fill="#2563c4"/>
+            </marker>
+          </defs>
+          <!-- Edges -->
+          <line x1="140" y1="56" x2="198" y2="108" stroke="#2563c4" stroke-width="1.5" marker-end="url(#arr)"/>
+          <line x1="280" y1="56" x2="222" y2="108" stroke="#2563c4" stroke-width="1.5" marker-end="url(#arr)"/>
+          <line x1="196" y1="134" x2="152" y2="182" stroke="#2563c4" stroke-width="1.5" marker-end="url(#arr)"/>
+          <line x1="224" y1="134" x2="268" y2="182" stroke="#2563c4" stroke-width="1.5" marker-end="url(#arr)"/>
+
+          <!-- Burglary -->
+          <circle cx="130" cy="46" r="38" fill="#1a1a2e" stroke="none"/>
+          <text x="130" y="40" text-anchor="middle" fill="white" font-size="11" font-family="Manrope" font-weight="700">Burglary</text>
+          <text x="130" y="55" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="9" font-family="Manrope">B</text>
+
+          <!-- Earthquake -->
+          <circle cx="290" cy="46" r="38" fill="#1a1a2e" stroke="none"/>
+          <text x="290" y="40" text-anchor="middle" fill="white" font-size="11" font-family="Manrope" font-weight="700">Earthquake</text>
+          <text x="290" y="55" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="9" font-family="Manrope">E</text>
+
+          <!-- Alarm -->
+          <circle cx="210" cy="120" r="38" fill="#2563c4" stroke="none"/>
+          <text x="210" y="115" text-anchor="middle" fill="white" font-size="12" font-family="Manrope" font-weight="700">Alarm</text>
+          <text x="210" y="130" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="9" font-family="Manrope">A</text>
+
+          <!-- JohnCalls -->
+          <circle cx="140" cy="200" r="38" fill="#0d7f6e" stroke="none"/>
+          <text x="140" y="194" text-anchor="middle" fill="white" font-size="10" font-family="Manrope" font-weight="700">JohnCalls</text>
+          <text x="140" y="208" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="9" font-family="Manrope">JC</text>
+
+          <!-- MaryCalls -->
+          <circle cx="280" cy="200" r="38" fill="#0d7f6e" stroke="none"/>
+          <text x="280" y="194" text-anchor="middle" fill="white" font-size="10" font-family="Manrope" font-weight="700">MaryCalls</text>
+          <text x="280" y="208" text-anchor="middle" fill="rgba(255,255,255,0.55)" font-size="9" font-family="Manrope">MC</text>
+        </svg>
+      </div>
+      <p style="font-size:12px; color:var(--ink-soft); text-align:center; margin-top:0.5rem;">Blue = Alarm. Dark = root causes. Teal = observations.</p>
+    </div>
+
+    <!-- EXERCISE 1 -->
+    <div class="exercise" id="ex1">
+      <span class="exercise-num">01</span>
+      <div class="exercise-body">
+        <p><strong>Concept check.</strong> In the Burglar Alarm network, you observe that John calls (<em>JC = true</em>). Which of the following best describes what inference does?</p>
+        <ul class="option-list" id="ex1-opts">
+          <li><label><input type="radio" name="ex1" value="a"> Reads P(JC = true) directly from a table</label></li>
+          <li><label><input type="radio" name="ex1" value="b"> Computes P(Burglary | JC = true) by combining CPTs and summing over unobserved variables</label></li>
+          <li><label><input type="radio" name="ex1" value="c"> Looks up the full joint table for all 5 variables and returns a row</label></li>
+          <li><label><input type="radio" name="ex1" value="d"> Sets all unknown variables to their prior probabilities</label></li>
+        </ul>
+        <div class="feedback-box" id="ex1-fb"></div>
+        <button class="btn btn-sm check-btn" onclick="checkMCQ('ex1','b','Exactly right. Inference computes a posterior using the network structure — it multiplies relevant CPTs and marginalizes out unobserved nodes like Alarm and Earthquake.')">Check answer</button>
+      </div>
+    </div>
+
+    <!-- EXERCISE 2 -->
+    <div class="exercise" id="ex2">
+      <span class="exercise-num">02</span>
+      <div class="exercise-body">
+        <p><strong>Marginalization.</strong> Suppose Alarm (<em>A</em>) is not observed. Write the sum that marginalizes A out of the expression P(B) · P(A|B) · P(JC|A):</p>
+        <div class="formula-box">P(B, JC) = Σ<sub>a</sub> P(B) · P(a | B) · P(JC | a)</div>
+        <p>What does each term in the sum represent? Write your answer below.</p>
+        <textarea class="student-answer" id="ex2-ans" placeholder="For a = true: ...  For a = false: ..."></textarea>
+        <button class="reveal-btn" onclick="toggleReveal('ex2-reveal')">Show model answer</button>
+        <div class="reveal-text" id="ex2-reveal">
+          <strong>For a = true:</strong> We assume the alarm rang — then we weight by how likely B causes the alarm to ring, and how likely John calls when the alarm is on.<br><br>
+          <strong>For a = false:</strong> We assume the alarm didn't ring — same logic but with those (lower) probabilities.<br><br>
+          Adding both terms gives the total probability of (B, JC), regardless of what Alarm actually was. This is <em>marginalization</em>.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== SECTION 2: MESSAGE PASSING ===== -->
+  <div class="section-block">
+    <div class="section-label">Section 2</div>
+    <h2>Message Passing &amp; Belief Updates</h2>
+
+    <div class="definition">
+      <div class="def-label">Definition</div>
+      <strong>Message passing</strong> is a technique where each node computes a local summary (a "message") and passes it to its neighbours. Beliefs are updated by combining incoming messages — no node needs to see the entire network.
+    </div>
+
+    <p style="margin-bottom:1rem;">In a chain <strong>B → A → MC</strong>, evidence from Mary calling (<em>MC</em>) flows backwards to inform our belief about Burglary:</p>
+    <div class="flow">
+      <span class="flow-node">MaryCalls</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node">Alarm</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-node">Burglary</span>
+    </div>
+
+    <!-- ===== INTERACTIVE BELIEF UPDATER ===== -->
+    <div class="net-container">
+      <h3 style="margin-bottom:1rem;">Interactive: Belief Updater</h3>
+      <p style="font-size:13px; color:var(--ink-mid); margin-bottom:1rem;">Adjust the prior probabilities and likelihood values. See how the posterior belief about Burglary changes when evidence arrives.</p>
+
+      <div class="sim-grid">
+        <div class="sim-card">
+          <label>P(Burglary) — prior</label>
+          <input type="range" id="p_b" min="0.001" max="0.3" step="0.001" value="0.001" oninput="updateBeliefs()">
+          <div class="val" id="p_b_val">0.001</div>
+        </div>
+        <div class="sim-card">
+          <label>P(Alarm | Burglary=T)</label>
+          <input type="range" id="p_a_b" min="0.1" max="0.99" step="0.01" value="0.94" oninput="updateBeliefs()">
+          <div class="val" id="p_a_b_val">0.94</div>
+        </div>
+        <div class="sim-card">
+          <label>P(Alarm | Burglary=F)</label>
+          <input type="range" id="p_a_nb" min="0.001" max="0.3" step="0.001" value="0.001" oninput="updateBeliefs()">
+          <div class="val" id="p_a_nb_val">0.001</div>
+        </div>
+        <div class="sim-card">
+          <label>P(MC=T | Alarm=T)</label>
+          <input type="range" id="p_mc_a" min="0.1" max="0.99" step="0.01" value="0.70" oninput="updateBeliefs()">
+          <div class="val" id="p_mc_a_val">0.70</div>
+        </div>
+      </div>
+
+      <div style="margin-top:1rem;">
+        <h3 style="margin-bottom:0.75rem; font-size:13px;">Posterior beliefs given <em>MaryCalls = true</em></h3>
+        <div class="result-row">
+          <span class="result-label">P(Burglary | MC=T)</span>
+          <div class="result-bar-wrap"><div class="result-bar" id="bar_b"></div></div>
+          <span class="result-num" id="num_b">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">P(Alarm=T | MC=T)</span>
+          <div class="result-bar-wrap"><div class="result-bar teal" id="bar_a"></div></div>
+          <span class="result-num" id="num_a">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">P(¬Burglary | MC=T)</span>
+          <div class="result-bar-wrap"><div class="result-bar amber" id="bar_nb"></div></div>
+          <span class="result-num" id="num_nb">—</span>
+        </div>
+      </div>
+      <p style="font-size:11px; color:var(--ink-faint); margin-top:0.75rem;">Simplified 1D chain model: B → A → MC. P(MC=F|A=T)=0.01 assumed.</p>
+    </div>
+
+    <!-- EXERCISE 3 -->
+    <div class="exercise" id="ex3">
+      <span class="exercise-num">03</span>
+      <div class="exercise-body">
+        <p><strong>Direction of flow.</strong> In the full Burglar Alarm network, you learn that <em>JC = true</em> and <em>MC = false</em>. According to belief propagation, which direction does information travel to update P(Burglary)?</p>
+        <ul class="option-list" id="ex3-opts">
+          <li><label><input type="radio" name="ex3" value="a"> From Burglary downward to JohnCalls and MaryCalls</label></li>
+          <li><label><input type="radio" name="ex3" value="b"> From JohnCalls and MaryCalls upward through Alarm to Burglary</label></li>
+          <li><label><input type="radio" name="ex3" value="c"> Evidence only updates the node where it's observed; other nodes are unchanged</label></li>
+          <li><label><input type="radio" name="ex3" value="d"> Information flows from Earthquake to Burglary directly</label></li>
+        </ul>
+        <div class="feedback-box" id="ex3-fb"></div>
+        <button class="btn btn-sm check-btn" onclick="checkMCQ('ex3','b','Correct! Evidence at child nodes (JC, MC) sends messages upward through Alarm to update beliefs about the root causes Burglary and Earthquake.')">Check answer</button>
+      </div>
+    </div>
+
+    <!-- EXERCISE 4 -->
+    <div class="exercise" id="ex4">
+      <span class="exercise-num">04</span>
+      <div class="exercise-body">
+        <p><strong>Explaining away.</strong> In the network, suppose both <em>Burglary</em> and <em>Earthquake</em> can cause the <em>Alarm</em> to go off. You know the alarm is ringing. You then learn there was an earthquake. What happens to your belief in a burglary?</p>
+        <ul class="option-list" id="ex4-opts">
+          <li><label><input type="radio" name="ex4" value="a"> It increases — earthquake makes burglary more likely</label></li>
+          <li><label><input type="radio" name="ex4" value="b"> It stays exactly the same — earthquake and burglary are independent</label></li>
+          <li><label><input type="radio" name="ex4" value="c"> It decreases — the earthquake already explains the alarm, so burglary is less necessary</label></li>
+          <li><label><input type="radio" name="ex4" value="d"> It drops to zero — the alarm can only have one cause</label></li>
+        </ul>
+        <div class="feedback-box" id="ex4-fb"></div>
+        <button class="btn btn-sm check-btn" onclick="checkMCQ('ex4','c','Correct! This is the explaining away (or Berkson\'s paradox) effect. When the alarm is observed, Burglary and Earthquake become conditionally dependent. Learning that one cause is active reduces the need to invoke the other.')">Check answer</button>
+      </div>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== SECTION 3: FORWARD SAMPLING ===== -->
+  <div class="section-block">
+    <div class="section-label">Section 3</div>
+    <h2>Forward Sampling</h2>
+
+    <div class="definition">
+      <div class="def-label">Definition</div>
+      <strong>Forward sampling</strong> generates a complete assignment of all variables by sampling each node in topological order (parents before children), using that node's conditional probability table given its already-sampled parents.
+    </div>
+
+    <div class="callout">
+      <span class="callout-icon">📋</span>
+      <span class="callout-text">Topological order for the Burglar Alarm network: <strong>B → E → A → JC → MC</strong>. Sampling must respect this order.</span>
+    </div>
+
+    <!-- CPT Table for forward sampling -->
+    <div class="card" style="margin-bottom:1rem;">
+      <h3 style="margin-bottom:0.75rem;">Simplified CPT values used in the simulator below</h3>
+      <div style="overflow-x:auto;">
+        <table class="cpt-table">
+          <thead>
+            <tr><th>Variable</th><th>Condition</th><th>P(True)</th><th>P(False)</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>B (Burglary)</td><td>—</td><td>0.001</td><td>0.999</td></tr>
+            <tr><td>E (Earthquake)</td><td>—</td><td>0.002</td><td>0.998</td></tr>
+            <tr><td>A (Alarm)</td><td>B=T, E=T</td><td>0.95</td><td>0.05</td></tr>
+            <tr><td>A (Alarm)</td><td>B=T, E=F</td><td>0.94</td><td>0.06</td></tr>
+            <tr><td>A (Alarm)</td><td>B=F, E=T</td><td>0.29</td><td>0.71</td></tr>
+            <tr><td>A (Alarm)</td><td>B=F, E=F</td><td>0.001</td><td>0.999</td></tr>
+            <tr><td>JC (JohnCalls)</td><td>A=T</td><td>0.90</td><td>0.10</td></tr>
+            <tr><td>JC (JohnCalls)</td><td>A=F</td><td>0.05</td><td>0.95</td></tr>
+            <tr><td>MC (MaryCalls)</td><td>A=T</td><td>0.70</td><td>0.30</td></tr>
+            <tr><td>MC (MaryCalls)</td><td>A=F</td><td>0.01</td><td>0.99</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- INTERACTIVE SAMPLER -->
+    <div class="net-container">
+      <h3 style="margin-bottom:0.75rem;">Interactive: Forward Sampling Simulator</h3>
+      <p style="font-size:13px; color:var(--ink-mid); margin-bottom:1rem;">Generate samples and estimate probabilities. If you set an evidence filter, only matching samples are kept (rejection sampling).</p>
+
+      <div style="display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:1rem;">
+        <div>
+          <label style="font-size:12px; font-weight:600; color:var(--ink-mid); display:block; margin-bottom:4px;">Samples to generate</label>
+          <select id="n_samples" style="font-size:13px; padding:6px 10px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface2);">
+            <option value="20">20</option>
+            <option value="50" selected>50</option>
+            <option value="100">100</option>
+            <option value="200">200</option>
+          </select>
+        </div>
+        <div>
+          <label style="font-size:12px; font-weight:600; color:var(--ink-mid); display:block; margin-bottom:4px;">Evidence filter (rejection sampling)</label>
+          <select id="evidence_filter" style="font-size:13px; padding:6px 10px; border:1px solid var(--border); border-radius:var(--radius-sm); background:var(--surface2);">
+            <option value="none">None — keep all samples</option>
+            <option value="jc_true">JC = true</option>
+            <option value="mc_true">MC = true</option>
+            <option value="jc_true_mc_false">JC=true AND MC=false</option>
+            <option value="jc_true_mc_true">JC=true AND MC=true</option>
+          </select>
+        </div>
+        <div style="align-self:flex-end;">
+          <button class="btn" onclick="runSampling()">Run sampling</button>
+        </div>
+      </div>
+
+      <div id="sample-dots" class="sample-grid">
+        <span style="font-size:12px; color:var(--ink-faint); align-self:center;">Samples will appear here...</span>
+      </div>
+      <p style="font-size:11px; color:var(--ink-faint); margin-top:4px;">
+        <span style="display:inline-block;width:12px;height:12px;background:var(--teal);border-radius:50%;vertical-align:middle;margin-right:4px;"></span>Kept &nbsp;
+        <span style="display:inline-block;width:12px;height:12px;background:#ccc;border-radius:50%;vertical-align:middle;margin-right:4px;"></span>Discarded
+      </p>
+
+      <div id="sample-results" style="margin-top:1rem; display:none;">
+        <h3 style="font-size:13px; margin-bottom:0.75rem;">Estimated probabilities from kept samples</h3>
+        <div class="result-row">
+          <span class="result-label">P(Burglary = T)</span>
+          <div class="result-bar-wrap"><div class="result-bar" id="sbar_b"></div></div>
+          <span class="result-num" id="snum_b">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">P(Alarm = T)</span>
+          <div class="result-bar-wrap"><div class="result-bar teal" id="sbar_a"></div></div>
+          <span class="result-num" id="snum_a">—</span>
+        </div>
+        <div class="result-row">
+          <span class="result-label">P(Earthquake = T)</span>
+          <div class="result-bar-wrap"><div class="result-bar amber" id="sbar_e"></div></div>
+          <span class="result-num" id="snum_e">—</span>
+        </div>
+        <p style="font-size:12px; color:var(--ink-soft); margin-top:0.75rem;" id="sample-summary"></p>
+      </div>
+    </div>
+
+    <!-- EXERCISE 5 -->
+    <div class="exercise" id="ex5">
+      <span class="exercise-num">05</span>
+      <div class="exercise-body">
+        <p><strong>Ordering constraint.</strong> When performing forward sampling on the Burglar Alarm network, why must Alarm be sampled <em>after</em> Burglary and Earthquake?</p>
+        <ul class="option-list" id="ex5-opts">
+          <li><label><input type="radio" name="ex5" value="a"> Because the alarm is harder to compute, so it goes last</label></li>
+          <li><label><input type="radio" name="ex5" value="b"> Because sampling Alarm requires knowing its parents' values — it uses P(A | B, E)</label></li>
+          <li><label><input type="radio" name="ex5" value="c"> Because Alarm is always observed, so it must be sampled first</label></li>
+          <li><label><input type="radio" name="ex5" value="d"> There is no constraint — variables can be sampled in any order</label></li>
+        </ul>
+        <div class="feedback-box" id="ex5-fb"></div>
+        <button class="btn btn-sm check-btn" onclick="checkMCQ('ex5','b','Exactly. Forward sampling uses P(X_i | parents(X_i)), so the parents must already be sampled. Topological ordering guarantees this.')">Check answer</button>
+      </div>
+    </div>
+
+    <!-- EXERCISE 6 -->
+    <div class="exercise" id="ex6">
+      <span class="exercise-num">06</span>
+      <div class="exercise-body">
+        <p><strong>Rejection sampling efficiency.</strong> Using the simulator above, set the filter to <em>"JC=true AND MC=true"</em> and run 200 samples. Observe how many samples are kept versus discarded. Then explain why this is inefficient when the evidence is rare.</p>
+        <textarea class="student-answer" id="ex6-ans" placeholder="Run the simulator, then write your observation here..."></textarea>
+        <button class="reveal-btn" onclick="toggleReveal('ex6-reveal')">Show model answer</button>
+        <div class="reveal-text" id="ex6-reveal">
+          When evidence is rare (e.g. P(JC=T, MC=T) is small because it requires a burglary or earthquake first), most generated samples won't match the filter and are discarded. Even with 200 samples, you might keep only a handful — making your frequency estimates very noisy. This is the fundamental inefficiency of rejection sampling: computational cost is inversely proportional to the probability of the evidence.
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== SECTION 4: EXACT VS APPROXIMATE ===== -->
+  <div class="section-block">
+    <div class="section-label">Section 4</div>
+    <h2>Exact vs Approximate Inference</h2>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.25rem;">
+      <div class="card card-teal">
+        <h3 style="color:var(--teal); margin-bottom:0.5rem;">Exact Inference</h3>
+        <p style="font-size:13px;">Computes the <em>true</em> posterior. Works by manipulating CPTs directly — multiplying and marginalizing.</p>
+        <p style="font-size:13px; margin-top:0.5rem;"><strong>Cost:</strong> Exponential in the number of variables in the worst case (NP-hard for general networks).</p>
+      </div>
+      <div class="card card-amber">
+        <h3 style="color:var(--amber); margin-bottom:0.5rem;">Approximate Inference</h3>
+        <p style="font-size:13px;">Trades accuracy for speed. Generates random samples and estimates probabilities from frequencies.</p>
+        <p style="font-size:13px; margin-top:0.5rem;"><strong>Cost:</strong> Scales with the number of samples needed for accuracy — often far more tractable.</p>
+      </div>
+    </div>
+
+    <!-- EXERCISE 7 -->
+    <div class="exercise" id="ex7">
+      <span class="exercise-num">07</span>
+      <div class="exercise-body">
+        <p><strong>Which method?</strong> You have a network with 40 binary variables and dense connections. Exact inference using variable elimination is too slow. Which alternative would you use?</p>
+        <ul class="option-list" id="ex7-opts">
+          <li><label><input type="radio" name="ex7" value="a"> Exact message passing — it's always faster than variable elimination</label></li>
+          <li><label><input type="radio" name="ex7" value="b"> Approximate inference via MCMC (Markov Chain Monte Carlo) or importance sampling</label></li>
+          <li><label><input type="radio" name="ex7" value="c"> Forward sampling with rejection — it becomes more accurate with more variables</label></li>
+          <li><label><input type="radio" name="ex7" value="d"> Computing the full joint table explicitly — it's the most reliable approach</label></li>
+        </ul>
+        <div class="feedback-box" id="ex7-fb"></div>
+        <button class="btn btn-sm check-btn" onclick="checkMCQ('ex7','b','Correct. MCMC methods like Gibbs sampling or Metropolis-Hastings are the standard choice for large, densely connected networks where exact inference is intractable. They avoid the exponential blowup of exact methods.')">Check answer</button>
+      </div>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== SECTION 5: LIMITATIONS ===== -->
+  <div class="section-block">
+    <div class="section-label">Section 5</div>
+    <h2>Limitations of Bayesian Networks</h2>
+
+    <div class="key-box">
+      <div class="kb-label">Five key limitations</div>
+      <ol style="font-size:13px; line-height:2; padding-left:1.25rem; color:rgba(255,255,255,0.85);">
+        <li>Inference can be computationally expensive (NP-hard in general)</li>
+        <li>CPTs become exponentially large as the number of parents grows</li>
+        <li>Learning the graph structure from data is hard (often requires expert knowledge)</li>
+        <li>Cycles are forbidden — feedback loops require extensions like Dynamic BNs</li>
+        <li>Wrong independence assumptions lead to systematically wrong posteriors</li>
+      </ol>
+    </div>
+
+    <!-- EXERCISE 8 -->
+    <div class="exercise" id="ex8">
+      <span class="exercise-num">08</span>
+      <div class="exercise-body">
+        <p><strong>Limitations matching.</strong> Match each scenario to the limitation it illustrates. Write the limitation number (1–5 from the box above) next to each scenario.</p>
+        <table style="width:100%; font-size:13px; border-collapse:collapse; margin-top:0.5rem;">
+          <thead>
+            <tr style="background:var(--surface2);">
+              <th style="padding:8px 12px; text-align:left; border-bottom:1px solid var(--border);">Scenario</th>
+              <th style="padding:8px 12px; text-align:left; border-bottom:1px solid var(--border);">Limitation #</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:8px 12px; border-bottom:1px solid var(--border);">A medical BN assumes symptoms are independent given the disease. In reality, two symptoms are correlated even after the disease is fixed. Predictions become unreliable.</td>
+              <td style="padding:8px 12px; border-bottom:1px solid var(--border);"><input type="text" id="match1" placeholder="#" style="width:40px; border:1px solid var(--border); border-radius:4px; padding:4px; text-align:center; font-family:'DM Mono',monospace;"></td>
+            </tr>
+            <tr>
+              <td style="padding:8px 12px; border-bottom:1px solid var(--border);">A node modelling "Disease" has 8 binary parent symptoms. Its CPT has 2⁸ = 256 rows that must each be estimated from data.</td>
+              <td style="padding:8px 12px; border-bottom:1px solid var(--border);"><input type="text" id="match2" placeholder="#" style="width:40px; border:1px solid var(--border); border-radius:4px; padding:4px; text-align:center; font-family:'DM Mono',monospace;"></td>
+            </tr>
+            <tr>
+              <td style="padding:8px 12px; border-bottom:1px solid var(--border);">A factory control system: machine A affects output B, which then affects how machine A runs next. A standard BN cannot represent this.</td>
+              <td style="padding:8px 12px; border-bottom:1px solid var(--border);"><input type="text" id="match3" placeholder="#" style="width:40px; border:1px solid var(--border); border-radius:4px; padding:4px; text-align:center; font-family:'DM Mono',monospace;"></td>
+            </tr>
+          </tbody>
+        </table>
+        <button class="btn btn-sm check-btn" style="margin-top:0.75rem;" onclick="checkMatching()">Check matching</button>
+        <div class="feedback-box" id="ex8-fb"></div>
+      </div>
+    </div>
+
+  </div>
+
+  <hr class="divider">
+
+  <!-- ===== FINAL CHALLENGE ===== -->
+  <div class="section-block">
+    <div class="section-label">Challenge Problem</div>
+    <h2>Putting It All Together</h2>
+    <div class="card card-coral">
+      <h3 style="margin-bottom:0.75rem;">Open-ended: Design your own network</h3>
+      <p style="font-size:13px; margin-bottom:0.75rem;">Consider the following scenario: <em>A student is late to class. This could be because of (a) a train delay, or (b) oversleeping. A train delay also depends on whether there was a track maintenance on that day.</em></p>
+      <p style="font-size:13px; margin-bottom:0.75rem;">Answer the following in the space below:</p>
+      <ol style="font-size:13px; padding-left:1.25rem; line-height:2;">
+        <li>Draw (describe in text) the Bayesian Network structure for this scenario.</li>
+        <li>List all the CPTs you would need to specify.</li>
+        <li>Write the inference query for: "Given the student is late, what is the probability of a track maintenance?"</li>
+        <li>Identify any independence assumptions encoded in your graph and assess whether they are realistic.</li>
+      </ol>
+      <textarea class="student-answer" id="challenge-ans" style="min-height:150px; margin-top:0.75rem;" placeholder="Write your full answer here..."></textarea>
+      <button class="reveal-btn" onclick="toggleReveal('challenge-reveal')" style="margin-top:0.5rem;">Show model answer</button>
+      <div class="reveal-text" id="challenge-reveal">
+        <strong>Network structure:</strong><br>
+        Maintenance → TrainDelay → Late ← Oversleeping<br>
+        (Maintenance is the sole parent of TrainDelay; both TrainDelay and Oversleeping are parents of Late)<br><br>
+        <strong>CPTs needed:</strong><br>
+        • P(Maintenance) — prior on maintenance days<br>
+        • P(TrainDelay | Maintenance) — conditional on maintenance<br>
+        • P(Oversleeping) — prior, independent root<br>
+        • P(Late | TrainDelay, Oversleeping) — 4-row table (2 binary parents)<br><br>
+        <strong>Inference query:</strong><br>
+        P(Maintenance | Late=T) = α · Σ_{td, os} P(Maintenance) · P(td | Maintenance) · P(os) · P(Late=T | td, os)<br><br>
+        <strong>Independence assumptions:</strong><br>
+        • Oversleeping ⊥ Maintenance (plausible — sleeping habits independent of city events)<br>
+        • Oversleeping ⊥ TrainDelay | nothing (plausible)<br>
+        • The only path from Maintenance to Late is through TrainDelay (encoded by the graph)<br>
+        Potential violation: students may set early alarms specifically because they worry about train delays — creating a dependence between Oversleeping and Maintenance not captured in the graph.
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Score badge -->
+<div class="score-banner">
+  <span>Score</span>
+  <span class="score-count" id="score-display">0 / 6</span>
+</div>
+
+<script>
+  let score = 0;
+  let answered = {};
+  const totalMCQ = 6;
+  const totalEx = 8;
+
+  function updateProgress() {
+    const n = Object.keys(answered).length;
+    const pct = Math.round((n / totalEx) * 100);
+    document.getElementById('prog-fill').style.width = pct + '%';
+    document.getElementById('prog-text').textContent = n + ' / ' + totalEx + ' answered';
+    document.getElementById('score-display').textContent = score + ' / ' + totalMCQ;
+  }
+
+  function checkMCQ(exId, correct, fb_correct) {
+    if (answered[exId]) return;
+    const selected = document.querySelector(`input[name="${exId}"]:checked`);
+    if (!selected) { alert('Please select an answer first.'); return; }
+    const val = selected.value;
+    const opts = document.getElementById(exId + '-opts');
+    const fb = document.getElementById(exId + '-fb');
+    const labels = opts.querySelectorAll('label');
+    labels.forEach(l => {
+      const inp = l.querySelector('input');
+      if (inp.value === correct) l.classList.add('correct');
+      else if (inp.value === val && val !== correct) l.classList.add('wrong');
+    });
+    if (val === correct) {
+      fb.className = 'feedback-box correct';
+      fb.innerHTML = '&#10003; ' + fb_correct;
+      score++;
+    } else {
+      fb.className = 'feedback-box wrong';
+      fb.innerHTML = '&#10007; Not quite. ' + fb_correct;
+    }
+    answered[exId] = true;
+    // disable radios
+    opts.querySelectorAll('input').forEach(i => i.disabled = true);
+    updateProgress();
+  }
+
+  function checkMatching() {
+    if (answered['ex8']) return;
+    const m1 = document.getElementById('match1').value.trim();
+    const m2 = document.getElementById('match2').value.trim();
+    const m3 = document.getElementById('match3').value.trim();
+    const fb = document.getElementById('ex8-fb');
+    const correct = m1 === '5' && m2 === '2' && m3 === '4';
+    if (correct) {
+      fb.className = 'feedback-box correct';
+      fb.innerHTML = '&#10003; All correct! Scenario 1 → #5 (wrong independence), Scenario 2 → #2 (large CPTs), Scenario 3 → #4 (cycles forbidden).';
+      score++;
+    } else {
+      fb.className = 'feedback-box wrong';
+      fb.innerHTML = '&#10007; Not quite. Hint: Scenario 1 = independence assumption problem (#5). Scenario 2 = exponential CPT size (#2). Scenario 3 = cycle / feedback loop (#4).';
+    }
+    answered['ex8'] = true;
+    updateProgress();
+  }
+
+  function toggleReveal(id) {
+    const el = document.getElementById(id);
+    const btn = el.previousElementSibling;
+    if (el.classList.contains('shown')) {
+      el.classList.remove('shown');
+      btn.textContent = 'Show model answer';
+      const exId = id.replace('-reveal', '');
+      if (!answered[exId]) { answered[exId] = true; updateProgress(); }
+    } else {
+      el.classList.add('shown');
+      btn.textContent = 'Hide model answer';
+      const exId = id.replace('-reveal', '');
+      if (!answered[exId]) { answered[exId] = true; updateProgress(); }
+    }
+  }
+
+  // ---- BELIEF UPDATER ----
+  function updateBeliefs() {
+    const p_b = parseFloat(document.getElementById('p_b').value);
+    const p_a_b = parseFloat(document.getElementById('p_a_b').value);
+    const p_a_nb = parseFloat(document.getElementById('p_a_nb').value);
+    const p_mc_a = parseFloat(document.getElementById('p_mc_a').value);
+    const p_mc_na = 0.01;
+
+    document.getElementById('p_b_val').textContent = p_b.toFixed(3);
+    document.getElementById('p_a_b_val').textContent = p_a_b.toFixed(2);
+    document.getElementById('p_a_nb_val').textContent = p_a_nb.toFixed(3);
+    document.getElementById('p_mc_a_val').textContent = p_mc_a.toFixed(2);
+
+    // P(MC=T) = P(MC=T|A=T)*P(A=T) + P(MC=T|A=F)*P(A=F)
+    // P(A=T) = P(A=T|B)*P(B) + P(A=T|!B)*P(!B)
+    const p_nb = 1 - p_b;
+    const p_a_T = p_a_b * p_b + p_a_nb * p_nb;
+    const p_a_F = 1 - p_a_T;
+    const p_mc_T = p_mc_a * p_a_T + p_mc_na * p_a_F;
+
+    // P(B | MC=T) via Bayes
+    // P(MC=T | B=T) = P(MC=T|A=T)*P(A=T|B=T) + P(MC=T|A=F)*P(A=F|B=T)
+    const p_mc_given_b = p_mc_a * p_a_b + p_mc_na * (1 - p_a_b);
+    const p_mc_given_nb = p_mc_a * p_a_nb + p_mc_na * (1 - p_a_nb);
+    const joint_b = p_mc_given_b * p_b;
+    const joint_nb = p_mc_given_nb * p_nb;
+    const norm = joint_b + joint_nb;
+    const post_b = joint_b / norm;
+    const post_nb = joint_nb / norm;
+
+    // P(A=T | MC=T) = P(MC=T|A=T)*P(A=T)/P(MC=T)
+    const post_a = (p_mc_a * p_a_T) / p_mc_T;
+
+    setBar('bar_b', 'num_b', post_b);
+    setBar('bar_a', 'num_a', post_a);
+    setBar('bar_nb', 'num_nb', post_nb);
+  }
+
+  function setBar(barId, numId, val) {
+    document.getElementById(barId).style.width = (val * 100).toFixed(1) + '%';
+    document.getElementById(numId).textContent = (val * 100).toFixed(1) + '%';
+  }
+
+  // ---- FORWARD SAMPLING ----
+  const CPT = {
+    B: { T: 0.001 },
+    E: { T: 0.002 },
+    A: {
+      'TT': 0.95, 'TF': 0.94, 'FT': 0.29, 'FF': 0.001
+    },
+    JC: { T: 0.90, F: 0.05 },
+    MC: { T: 0.70, F: 0.01 }
+  };
+
+  function sampleBool(p) { return Math.random() < p; }
+
+  function generateSample() {
+    const B = sampleBool(CPT.B.T);
+    const E = sampleBool(CPT.E.T);
+    const key = (B ? 'T' : 'F') + (E ? 'T' : 'F');
+    const A = sampleBool(CPT.A[key]);
+    const JC = sampleBool(A ? CPT.JC.T : CPT.JC.F);
+    const MC = sampleBool(A ? CPT.MC.T : CPT.MC.F);
+    return { B, E, A, JC, MC };
+  }
+
+  function passesFilter(s, filter) {
+    if (filter === 'none') return true;
+    if (filter === 'jc_true') return s.JC === true;
+    if (filter === 'mc_true') return s.MC === true;
+    if (filter === 'jc_true_mc_false') return s.JC === true && s.MC === false;
+    if (filter === 'jc_true_mc_true') return s.JC === true && s.MC === true;
+    return true;
+  }
+
+  function runSampling() {
+    const n = parseInt(document.getElementById('n_samples').value);
+    const filter = document.getElementById('evidence_filter').value;
+    const dotsEl = document.getElementById('sample-dots');
+    dotsEl.innerHTML = '';
+
+    let kept = [], total = n;
+    const samples = [];
+    for (let i = 0; i < total; i++) {
+      const s = generateSample();
+      const keep = passesFilter(s, filter);
+      samples.push({ s, keep });
+      if (keep) kept.push(s);
+    }
+
+    samples.forEach(({ s, keep }) => {
+      const dot = document.createElement('span');
+      dot.className = 'sample-dot ' + (keep ? 'dot-keep' : 'dot-discard');
+      dot.title = `B=${s.B?'T':'F'} E=${s.E?'T':'F'} A=${s.A?'T':'F'} JC=${s.JC?'T':'F'} MC=${s.MC?'T':'F'}`;
+      dot.textContent = keep ? '✓' : '×';
+      dotsEl.appendChild(dot);
+    });
+
+    const resultsEl = document.getElementById('sample-results');
+    if (kept.length === 0) {
+      resultsEl.style.display = 'block';
+      document.getElementById('sample-summary').textContent = `0 / ${total} samples passed the filter. No estimates possible — evidence is too rare! Try more samples or a less restrictive filter.`;
+      ['sbar_b','sbar_a','sbar_e'].forEach(id => document.getElementById(id).style.width = '0%');
+      ['snum_b','snum_a','snum_e'].forEach(id => document.getElementById(id).textContent = 'N/A');
+      return;
+    }
+
+    const p_b = kept.filter(s => s.B).length / kept.length;
+    const p_a = kept.filter(s => s.A).length / kept.length;
+    const p_e = kept.filter(s => s.E).length / kept.length;
+
+    setBar('sbar_b', 'snum_b', p_b);
+    setBar('sbar_a', 'snum_a', p_a);
+    setBar('sbar_e', 'snum_e', p_e);
+    document.getElementById('sample-summary').textContent = `${kept.length} of ${total} samples kept (${(kept.length/total*100).toFixed(1)}% acceptance rate).`;
+    resultsEl.style.display = 'block';
+  }
+
+  // also track textarea fills as "answered"
+  ['ex2-ans','ex6-ans','challenge-ans'].forEach(id => {
+    const el = document.getElementById(id);
+    if (el) el.addEventListener('input', function() {
+      const exId = id.replace('-ans','');
+      if (this.value.trim().length > 20 && !answered[exId]) {
+        answered[exId] = true;
+        updateProgress();
+      }
+    });
+  });
+
+  updateBeliefs();
+  updateProgress();
+</script>
+</body>
+</html>

@@ -1,0 +1,970 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Word Sense Disambiguation — Bayesian Networks Worksheet</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=IBM+Plex+Mono:wght@400;500&family=Lato:wght@300;400;700;900&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0f1117;
+  --surface:#181c27;
+  --surface2:#1e2235;
+  --surface3:#252a3f;
+  --border:rgba(255,255,255,0.07);
+  --border2:rgba(255,255,255,0.13);
+  --ink:#e8eaf0;
+  --ink-mid:#9ca3c0;
+  --ink-soft:#636882;
+  --accent:#e8b84b;
+  --accent2:#3b82f6;
+  --teal:#2dd4bf;
+  --coral:#f87171;
+  --green:#4ade80;
+  --purple:#a78bfa;
+  --radius:14px;
+  --radius-sm:8px;
+}
+
+body{font-family:'Lato',sans-serif;background:var(--bg);color:var(--ink);line-height:1.7;font-size:15px;}
+
+/* ---- HERO ---- */
+.hero{
+  background:var(--surface);
+  border-bottom:1px solid var(--border);
+  padding:3.5rem 2rem 3rem;
+  position:relative;
+  overflow:hidden;
+}
+.hero-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(59,130,246,0.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(59,130,246,0.05) 1px,transparent 1px);
+  background-size:40px 40px;
+}
+.hero-inner{max-width:860px;margin:0 auto;position:relative;z-index:1;}
+.hero-kicker{
+  font-size:11px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--accent);margin-bottom:1rem;
+}
+.hero h1{
+  font-family:'Playfair Display',serif;
+  font-size:clamp(2rem,5vw,3.2rem);
+  font-weight:700;line-height:1.15;
+  margin-bottom:1rem;
+  color:white;
+}
+.hero h1 em{font-style:italic;color:var(--accent);}
+.hero-sub{font-size:14px;color:var(--ink-mid);max-width:580px;line-height:1.8;}
+.hero-chips{display:flex;gap:8px;flex-wrap:wrap;margin-top:1.5rem;}
+.hero-chip{
+  font-size:11px;font-weight:700;letter-spacing:0.08em;
+  padding:4px 12px;border-radius:20px;
+  border:1px solid var(--border2);color:var(--ink-mid);
+}
+.hero-chip.hi{border-color:rgba(232,184,75,0.4);color:var(--accent);}
+
+/* ---- LAYOUT ---- */
+.wrap{max-width:860px;margin:0 auto;padding:2.5rem 1.5rem 5rem;}
+
+/* ---- SECTION HEADS ---- */
+.sec-label{
+  font-size:10px;font-weight:700;letter-spacing:0.2em;text-transform:uppercase;
+  color:var(--accent2);margin-bottom:0.5rem;
+}
+h2{
+  font-family:'Playfair Display',serif;
+  font-size:1.55rem;font-weight:700;color:white;
+  margin-bottom:1.25rem;padding-bottom:0.6rem;
+  border-bottom:1px solid var(--border);
+}
+h3{font-size:0.9rem;font-weight:700;color:var(--ink);margin-bottom:0.5rem;letter-spacing:0.02em;}
+
+/* ---- CARDS ---- */
+.card{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.4rem;margin-bottom:1.2rem;
+}
+.card-accent{border-left:3px solid var(--accent);}
+.card-blue{border-left:3px solid var(--accent2);}
+.card-teal{border-left:3px solid var(--teal);}
+.card-coral{border-left:3px solid var(--coral);}
+.card-purple{border-left:3px solid var(--purple);}
+
+/* ---- DEFINITION ---- */
+.def{
+  background:var(--surface2);border:1px solid var(--border);
+  border-left:3px solid var(--accent);border-radius:var(--radius-sm);
+  padding:1rem 1.25rem;margin-bottom:1rem;
+}
+.def-lbl{font-size:10px;font-weight:700;letter-spacing:0.14em;text-transform:uppercase;color:var(--accent);margin-bottom:0.3rem;}
+
+/* ---- SENTENCE DISPLAY ---- */
+.sentence-strip{
+  background:var(--surface2);border:1px solid var(--border2);border-radius:var(--radius-sm);
+  padding:1rem 1.25rem;margin:0.75rem 0;font-size:16px;letter-spacing:0.01em;
+  display:flex;align-items:baseline;gap:6px;flex-wrap:wrap;
+}
+.word{
+  display:inline-block;padding:2px 7px;border-radius:5px;
+  font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;
+  transition:transform 0.15s,background 0.15s;cursor:default;
+}
+.word:hover{transform:translateY(-2px);}
+.word.target{background:rgba(232,184,75,0.18);color:var(--accent);border:1px solid rgba(232,184,75,0.35);}
+.word.context-river{background:rgba(45,212,191,0.12);color:var(--teal);border:1px solid rgba(45,212,191,0.25);}
+.word.context-finance{background:rgba(59,130,246,0.12);color:var(--accent2);border:1px solid rgba(59,130,246,0.25);}
+.word.neutral{color:var(--ink-mid);}
+
+/* ---- SENSE METER ---- */
+.sense-meter{
+  display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:0;
+  background:var(--surface3);border-radius:30px;overflow:hidden;
+  border:1px solid var(--border);margin:1rem 0;height:40px;position:relative;
+}
+.sense-left,.sense-right{
+  display:flex;align-items:center;justify-content:center;
+  font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+  padding:0 12px;height:100%;
+}
+.sense-left{background:rgba(45,212,191,0.15);color:var(--teal);}
+.sense-right{background:rgba(59,130,246,0.15);color:var(--accent2);}
+.sense-needle{
+  width:3px;height:100%;background:var(--border2);position:relative;
+}
+.meter-bar{
+  position:absolute;top:0;left:0;height:100%;
+  display:flex;
+}
+.meter-fill-river{background:rgba(45,212,191,0.3);transition:width 0.5s cubic-bezier(0.4,0,0.2,1);}
+.meter-fill-finance{background:rgba(59,130,246,0.3);transition:width 0.5s cubic-bezier(0.4,0,0.2,1);}
+.sense-prob{
+  position:absolute;top:50%;transform:translateY(-50%);
+  font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:500;
+}
+.sense-prob.river{left:8px;color:var(--teal);}
+.sense-prob.finance{right:8px;color:var(--accent2);}
+
+/* ---- FORMULA ---- */
+.formula{
+  background:var(--surface3);border-radius:var(--radius-sm);
+  padding:1rem 1.25rem;text-align:center;
+  font-family:'IBM Plex Mono',monospace;font-size:13px;color:var(--ink-mid);
+  margin:0.75rem 0;line-height:2;
+}
+.formula .hi{color:var(--accent);}
+.formula .hiB{color:var(--accent2);}
+.formula .hiT{color:var(--teal);}
+
+/* ---- EXERCISE ---- */
+.ex{
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);padding:1.4rem 1.5rem;margin-bottom:1.1rem;
+  position:relative;
+}
+.ex-num{
+  position:absolute;top:-1px;left:-1px;
+  background:var(--accent);color:#000;
+  font-size:10px;font-weight:900;letter-spacing:0.1em;
+  padding:3px 11px;border-radius:var(--radius) 0 var(--radius-sm) 0;
+}
+.ex-body{padding-top:0.6rem;}
+.ex-body p{font-size:14px;margin-bottom:0.8rem;color:var(--ink);}
+.ex-body p strong{color:white;}
+
+/* ---- MCQ ---- */
+.opts{list-style:none;margin:0.5rem 0;}
+.opts li{margin-bottom:6px;}
+.opts label{
+  display:flex;align-items:flex-start;gap:10px;cursor:pointer;
+  font-size:13.5px;padding:9px 13px;border-radius:var(--radius-sm);
+  border:1px solid var(--border2);color:var(--ink-mid);
+  transition:background 0.12s,border-color 0.12s;
+}
+.opts label:hover{background:var(--surface2);color:var(--ink);}
+.opts input[type=radio]{margin-top:3px;accent-color:var(--accent);flex-shrink:0;}
+.opts label.correct{background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.4);color:var(--green);}
+.opts label.wrong{background:rgba(248,113,113,0.1);border-color:rgba(248,113,113,0.4);color:var(--coral);}
+
+.fb{display:none;margin-top:0.75rem;padding:0.75rem 1rem;border-radius:var(--radius-sm);font-size:13px;line-height:1.6;}
+.fb.ok{display:block;background:rgba(74,222,128,0.08);color:var(--green);border:1px solid rgba(74,222,128,0.2);}
+.fb.err{display:block;background:rgba(248,113,113,0.08);color:var(--coral);border:1px solid rgba(248,113,113,0.2);}
+
+/* ---- TEXTAREA ---- */
+textarea.sa{
+  width:100%;min-height:80px;resize:vertical;
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--radius-sm);padding:0.75rem;
+  font-family:'Lato',sans-serif;font-size:13px;color:var(--ink);line-height:1.6;
+  margin-top:0.5rem;transition:border-color 0.15s;
+}
+textarea.sa:focus{outline:none;border-color:var(--accent);}
+
+/* ---- BUTTONS ---- */
+.btn{
+  font-family:'Lato',sans-serif;font-size:12px;font-weight:700;
+  padding:8px 18px;border-radius:var(--radius-sm);cursor:pointer;
+  border:1.5px solid var(--accent);background:var(--accent);color:#000;
+  transition:all 0.15s;letter-spacing:0.05em;margin-top:0.75rem;
+}
+.btn:hover{background:transparent;color:var(--accent);}
+.btn-ghost{background:transparent;border-color:var(--border2);color:var(--ink-soft);margin-left:8px;}
+.btn-ghost:hover{border-color:var(--ink-mid);color:var(--ink);}
+
+/* ---- REVEAL ---- */
+.reveal-btn{
+  font-size:11px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;
+  color:var(--ink-soft);background:none;border:none;cursor:pointer;
+  font-family:'Lato',sans-serif;margin-top:0.6rem;
+  text-decoration:none;border-bottom:1px dashed var(--ink-soft);
+  transition:color 0.12s;padding-bottom:1px;
+}
+.reveal-btn:hover{color:var(--accent);}
+.reveal-text{
+  display:none;background:rgba(74,222,128,0.07);border:1px solid rgba(74,222,128,0.2);
+  border-radius:var(--radius-sm);padding:0.75rem 1rem;
+  font-size:13px;color:var(--green);margin-top:0.5rem;line-height:1.7;
+}
+.reveal-text.on{display:block;}
+
+/* ---- CPT TABLE ---- */
+.cpt{width:100%;border-collapse:collapse;font-size:12.5px;font-family:'IBM Plex Mono',monospace;margin:0.75rem 0;}
+.cpt th{background:var(--surface3);color:var(--ink-mid);padding:7px 12px;text-align:center;font-size:10px;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;}
+.cpt td{padding:7px 12px;border-bottom:1px solid var(--border);text-align:center;color:var(--ink);}
+.cpt tr:last-child td{border-bottom:none;}
+.cpt .hi{color:var(--accent);font-weight:700;}
+.cpt .hiT{color:var(--teal);}
+.cpt .hiB{color:var(--accent2);}
+
+/* ---- INTERACTIVE CLASSIFIER ---- */
+.wsd-demo{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:1.4rem;margin-bottom:1.2rem;}
+.word-toggles{display:flex;flex-wrap:wrap;gap:8px;margin:0.75rem 0;}
+.wtog{
+  font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;
+  padding:6px 13px;border-radius:20px;cursor:pointer;
+  border:1.5px solid var(--border2);background:var(--surface2);color:var(--ink-soft);
+  transition:all 0.15s;user-select:none;
+}
+.wtog.active-river{border-color:var(--teal);background:rgba(45,212,191,0.12);color:var(--teal);}
+.wtog.active-finance{border-color:var(--accent2);background:rgba(59,130,246,0.12);color:var(--accent2);}
+.wtog:hover{color:var(--ink);border-color:var(--border2);}
+
+.posterior-display{
+  display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-top:1rem;
+}
+.post-card{
+  background:var(--surface2);border-radius:var(--radius-sm);padding:1rem;
+  border:1px solid var(--border);text-align:center;
+}
+.post-sense{font-size:10px;font-weight:700;letter-spacing:0.15em;text-transform:uppercase;margin-bottom:6px;}
+.post-sense.river{color:var(--teal);}
+.post-sense.finance{color:var(--accent2);}
+.post-val{font-family:'IBM Plex Mono',monospace;font-size:2rem;font-weight:500;line-height:1;}
+.post-val.river{color:var(--teal);}
+.post-val.finance{color:var(--accent2);}
+.post-bar{height:6px;border-radius:20px;background:var(--surface3);margin-top:8px;overflow:hidden;}
+.post-bar-fill{height:100%;border-radius:20px;transition:width 0.45s cubic-bezier(0.4,0,0.2,1);}
+.pbf-river{background:var(--teal);}
+.pbf-finance{background:var(--accent2);}
+.decision-badge{
+  text-align:center;margin-top:0.75rem;padding:0.6rem;
+  border-radius:var(--radius-sm);font-size:12px;font-weight:700;letter-spacing:0.08em;
+  text-transform:uppercase;transition:all 0.3s;
+}
+
+/* ---- SENTENCE BUILDER EXERCISE ---- */
+.sent-builder{
+  display:flex;gap:8px;flex-wrap:wrap;margin:0.75rem 0;
+  background:var(--surface3);border-radius:var(--radius-sm);padding:1rem;
+  min-height:50px;align-items:center;
+}
+.word-tile{
+  font-family:'IBM Plex Mono',monospace;font-size:13px;font-weight:500;
+  padding:5px 12px;border-radius:20px;
+  border:1.5px solid var(--border2);color:var(--ink-mid);
+  cursor:pointer;transition:all 0.12s;
+}
+.word-tile:hover{border-color:var(--accent);color:var(--accent);}
+.word-tile.selected-river{border-color:var(--teal);color:var(--teal);background:rgba(45,212,191,0.1);}
+.word-tile.selected-finance{border-color:var(--accent2);color:var(--accent2);background:rgba(59,130,246,0.1);}
+.word-tile.selected-neutral{border-color:var(--ink-soft);color:var(--ink);background:var(--surface2);}
+
+/* ---- SCORE BADGE ---- */
+.score-badge{
+  position:fixed;bottom:1.5rem;right:1.5rem;
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:30px;padding:10px 20px;
+  display:flex;align-items:center;gap:10px;
+  box-shadow:0 8px 32px rgba(0,0,0,0.4);z-index:200;
+}
+.score-badge span{font-size:12px;font-weight:700;letter-spacing:0.08em;text-transform:uppercase;color:var(--ink-soft);}
+.score-num{font-family:'IBM Plex Mono',monospace;font-size:1.4rem;font-weight:500;color:var(--accent);}
+
+/* ---- PROGRESS ---- */
+.prog-wrap{margin-bottom:2.5rem;}
+.prog-labels{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-soft);margin-bottom:6px;}
+.prog-track{background:var(--surface2);border-radius:20px;height:4px;}
+.prog-fill{height:100%;border-radius:20px;background:var(--teal);width:0%;transition:width 0.4s;}
+
+/* ---- DIVIDER ---- */
+hr{border:none;border-top:1px solid var(--border);margin:2.5rem 0;}
+
+/* ---- CALLOUT ---- */
+.callout{
+  display:flex;gap:12px;padding:1rem 1.25rem;
+  border-radius:var(--radius-sm);margin-bottom:1rem;
+  background:var(--surface2);border:1px solid var(--border);
+}
+.callout.info{border-left:3px solid var(--accent2);}
+.callout.warn{border-left:3px solid var(--accent);}
+.callout-icon{font-size:15px;flex-shrink:0;margin-top:2px;}
+.callout-text{font-size:13px;color:var(--ink-mid);line-height:1.6;}
+
+/* ---- BN DIAGRAM ---- */
+.bn-svg{display:block;margin:0 auto;max-width:100%;}
+
+/* ---- STEP TRACE ---- */
+.step-trace{
+  background:var(--surface3);border-radius:var(--radius-sm);
+  padding:0.75rem 1rem;font-family:'IBM Plex Mono',monospace;
+  font-size:12px;color:var(--ink-mid);line-height:2;
+  margin:0.75rem 0;
+}
+.step-trace .hi{color:var(--accent);}
+.step-trace .hiT{color:var(--teal);}
+.step-trace .hiB{color:var(--accent2);}
+
+/* ---- GRID ---- */
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:1rem;}
+@media(max-width:580px){.two-col{grid-template-columns:1fr;}}
+
+/* ---- LEGEND ---- */
+.legend{display:flex;gap:16px;flex-wrap:wrap;margin-bottom:0.75rem;font-size:12px;}
+.legend-item{display:flex;align-items:center;gap:6px;color:var(--ink-mid);}
+.legend-dot{width:10px;height:10px;border-radius:50%;}
+</style>
+</head>
+<body>
+
+<div class="hero">
+  <div class="hero-grid"></div>
+  <div class="hero-inner">
+    <div class="hero-kicker">Bayesian Networks · Applied Worksheet</div>
+    <h1>Word Sense<br><em>Disambiguation</em></h1>
+    <p class="hero-sub">Use Bayesian inference to figure out what a word <em>actually means</em> — by treating context words as evidence and senses as hidden variables. All exercises use one running example: the word <strong>"bank"</strong>.</p>
+    <div class="hero-chips">
+      <span class="hero-chip hi">Target word: "bank"</span>
+      <span class="hero-chip">River sense vs. Finance sense</span>
+      <span class="hero-chip">5-word sentences as evidence</span>
+      <span class="hero-chip">Assumes: CPTs &amp; d-separation</span>
+    </div>
+  </div>
+</div>
+
+<div class="wrap">
+
+  <div class="prog-wrap">
+    <div class="prog-labels"><span>Worksheet progress</span><span id="prog-text">0 / 9 answered</span></div>
+    <div class="prog-track"><div class="prog-fill" id="prog-fill"></div></div>
+  </div>
+
+  <!-- ===== SECTION 0: WHAT IS WSD ===== -->
+  <div class="sec-label">Background</div>
+  <h2>What Is Word Sense Disambiguation?</h2>
+
+  <div class="def">
+    <div class="def-lbl">Definition</div>
+    <strong>Word Sense Disambiguation (WSD)</strong> is the task of determining which <em>meaning</em> of an ambiguous word is intended in a given sentence, using the surrounding words as evidence.
+  </div>
+
+  <div class="card card-accent" style="margin-bottom:1rem;">
+    <h3 style="color:var(--accent);margin-bottom:0.75rem;">The Running Example: "bank"</h3>
+    <div class="two-col">
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--teal);margin-bottom:6px;">Sense 1 — River</div>
+        <div class="sentence-strip">
+          <span class="word context-river">muddy</span>
+          <span class="word context-river">river</span>
+          <span class="word target">bank</span>
+          <span class="word context-river">erodes</span>
+          <span class="word context-river">quickly</span>
+        </div>
+        <p style="font-size:12px;color:var(--ink-soft);margin-top:4px;">Teal words = river-sense context clues</p>
+      </div>
+      <div>
+        <div style="font-size:11px;font-weight:700;letter-spacing:0.12em;text-transform:uppercase;color:var(--accent2);margin-bottom:6px;">Sense 2 — Finance</div>
+        <div class="sentence-strip">
+          <span class="word context-finance">loan</span>
+          <span class="word context-finance">approved</span>
+          <span class="word target">bank</span>
+          <span class="word context-finance">charged</span>
+          <span class="word context-finance">interest</span>
+        </div>
+        <p style="font-size:12px;color:var(--ink-soft);margin-top:4px;">Blue words = finance-sense context clues</p>
+      </div>
+    </div>
+  </div>
+
+  <p style="font-size:14px;color:var(--ink-mid);margin-bottom:1.5rem;">The challenge: both sentences have the same target word <code style="font-family:'IBM Plex Mono',monospace;font-size:12px;background:var(--surface2);padding:2px 6px;border-radius:4px;">bank</code> — but completely different meanings. A Bayesian Network can use the context words as evidence to infer which sense is intended.</p>
+
+  <!-- ===== SECTION 1: THE BN MODEL ===== -->
+  <hr>
+  <div class="sec-label">Section 1</div>
+  <h2>The Bayesian Network for WSD</h2>
+
+  <div class="card card-blue">
+    <h3 style="margin-bottom:0.75rem;">Network Structure</h3>
+    <p style="font-size:13px;color:var(--ink-mid);margin-bottom:1rem;">The <em>Sense</em> of "bank" is the hidden root node. The context words in each position are the observable leaf nodes. Each context word's distribution depends on the sense.</p>
+    <svg class="bn-svg" width="500" height="200" viewBox="0 0 500 200" xmlns="http://www.w3.org/2000/svg">
+      <defs>
+        <marker id="ar" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+          <polygon points="0 0,8 3,0 6" fill="rgba(255,255,255,0.25)"/>
+        </marker>
+      </defs>
+      <!-- Sense node -->
+      <ellipse cx="250" cy="42" rx="68" ry="28" fill="#1e2235" stroke="rgba(232,184,75,0.5)" stroke-width="1.5"/>
+      <text x="250" y="38" text-anchor="middle" fill="#e8b84b" font-family="Lato" font-weight="700" font-size="12">Sense(bank)</text>
+      <text x="250" y="53" text-anchor="middle" fill="rgba(232,184,75,0.5)" font-family="IBM Plex Mono" font-size="10">River | Finance</text>
+      <!-- Edges -->
+      <line x1="190" y1="62" x2="82" y2="142" stroke="rgba(255,255,255,0.15)" stroke-width="1.2" marker-end="url(#ar)"/>
+      <line x1="222" y1="67" x2="178" y2="142" stroke="rgba(255,255,255,0.15)" stroke-width="1.2" marker-end="url(#ar)"/>
+      <line x1="250" y1="70" x2="250" y2="142" stroke="rgba(255,255,255,0.15)" stroke-width="1.2" marker-end="url(#ar)"/>
+      <line x1="278" y1="67" x2="322" y2="142" stroke="rgba(255,255,255,0.15)" stroke-width="1.2" marker-end="url(#ar)"/>
+      <line x1="310" y1="62" x2="418" y2="142" stroke="rgba(255,255,255,0.15)" stroke-width="1.2" marker-end="url(#ar)"/>
+      <!-- Context nodes -->
+      <ellipse cx="75" cy="162" rx="52" ry="24" fill="#1e2235" stroke="rgba(45,212,191,0.4)" stroke-width="1.2"/>
+      <text x="75" y="167" text-anchor="middle" fill="#2dd4bf" font-family="IBM Plex Mono" font-size="11" font-weight="500">w₁</text>
+      <ellipse cx="178" cy="162" rx="52" ry="24" fill="#1e2235" stroke="rgba(45,212,191,0.4)" stroke-width="1.2"/>
+      <text x="178" y="167" text-anchor="middle" fill="#2dd4bf" font-family="IBM Plex Mono" font-size="11" font-weight="500">w₂</text>
+      <ellipse cx="250" cy="162" rx="52" ry="24" fill="#252a3f" stroke="rgba(232,184,75,0.6)" stroke-width="1.5"/>
+      <text x="250" y="160" text-anchor="middle" fill="#e8b84b" font-family="IBM Plex Mono" font-size="11" font-weight="700">bank</text>
+      <text x="250" y="173" text-anchor="middle" fill="rgba(232,184,75,0.5)" font-family="IBM Plex Mono" font-size="9">target</text>
+      <ellipse cx="322" cy="162" rx="52" ry="24" fill="#1e2235" stroke="rgba(45,212,191,0.4)" stroke-width="1.2"/>
+      <text x="322" y="167" text-anchor="middle" fill="#2dd4bf" font-family="IBM Plex Mono" font-size="11" font-weight="500">w₄</text>
+      <ellipse cx="420" cy="162" rx="52" ry="24" fill="#1e2235" stroke="rgba(45,212,191,0.4)" stroke-width="1.2"/>
+      <text x="420" y="167" text-anchor="middle" fill="#2dd4bf" font-family="IBM Plex Mono" font-size="11" font-weight="500">w₅</text>
+    </svg>
+    <p style="font-size:11px;color:var(--ink-soft);text-align:center;margin-top:0.5rem;">Gold = Sense node (hidden). Teal = observed context words (w₁…w₅, excluding target position).</p>
+  </div>
+
+  <div class="callout info">
+    <span class="callout-icon">🔑</span>
+    <span class="callout-text"><strong>Key independence assumption:</strong> Given the Sense, each context word is <em>conditionally independent</em> of all other context words. This is the Naïve Bayes assumption — it makes inference tractable by allowing us to multiply per-word likelihoods.</span>
+  </div>
+
+  <div class="card card-teal">
+    <h3 style="margin-bottom:0.75rem;">Inference Formula</h3>
+    <div class="formula">
+      <span class="hiT">P(Sense | w₁,w₂,w₄,w₅)</span> ∝ <span class="hi">P(Sense)</span> × ∏ᵢ <span class="hiB">P(wᵢ | Sense)</span>
+    </div>
+    <p style="font-size:13px;color:var(--ink-mid);">The prior <span style="color:var(--accent)">P(Sense)</span> reflects base rates (e.g. how often does "bank" mean river vs. finance in typical text). Each <span style="color:var(--accent2)">P(wᵢ | Sense)</span> term is a row in a CPT that encodes how likely each word is under each sense.</p>
+  </div>
+
+  <!-- EXERCISE 1 -->
+  <div class="ex" id="ex1">
+    <span class="ex-num">01</span>
+    <div class="ex-body">
+      <p><strong>Network structure.</strong> In the WSD Bayesian Network above, what type of node is <em>Sense(bank)</em> and why?</p>
+      <ul class="opts" id="ex1-opts">
+        <li><label><input type="radio" name="ex1" value="a"> An observed leaf node — it's the word we're trying to disambiguate</label></li>
+        <li><label><input type="radio" name="ex1" value="b"> A hidden root node — it is not directly observed; we infer it from context word evidence</label></li>
+        <li><label><input type="radio" name="ex1" value="c"> An evidence node — its value is always given as input</label></li>
+        <li><label><input type="radio" name="ex1" value="d"> An intermediate node — it has both parents and children in this network</label></li>
+      </ul>
+      <div class="fb" id="ex1-fb"></div>
+      <button class="btn" onclick="checkMCQ('ex1','b','Correct. Sense(bank) is the hidden variable we want to infer. It has no parents (it is a root) and we never observe it directly — we only observe the surrounding context words, which are its children.')">Check</button>
+    </div>
+  </div>
+
+  <!-- EXERCISE 2 -->
+  <div class="ex" id="ex2">
+    <span class="ex-num">02</span>
+    <div class="ex-body">
+      <p><strong>Independence assumption.</strong> The model assumes that once the Sense is known, the context words are independent of each other. Which of these real-world violations would hurt the model the most?</p>
+      <ul class="opts" id="ex2-opts">
+        <li><label><input type="radio" name="ex2" value="a"> The word "muddy" almost always appears next to "river" in finance-sense sentences</label></li>
+        <li><label><input type="radio" name="ex2" value="b"> The words "loan" and "interest" frequently co-occur even after conditioning on Sense=Finance (correlated context words)</label></li>
+        <li><label><input type="radio" name="ex2" value="c"> The prior P(Sense=River) is slightly wrong</label></li>
+        <li><label><input type="radio" name="ex2" value="d"> The sentence has 5 words instead of 4</label></li>
+      </ul>
+      <div class="fb" id="ex2-fb"></div>
+      <button class="btn" onclick="checkMCQ('ex2','b','Correct. The model multiplies P(loan|Sense) × P(interest|Sense), treating them as independent. But if these words are correlated beyond what Sense explains — e.g. one implies the other — the model double-counts evidence and produces overconfident posteriors. This is a classic Naïve Bayes failure mode.')">Check</button>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ===== SECTION 2: CPT + WORKED EXAMPLE ===== -->
+  <div class="sec-label">Section 2</div>
+  <h2>CPTs and a Worked Inference</h2>
+
+  <div class="card">
+    <h3 style="margin-bottom:0.75rem;">Prior: P(Sense)</h3>
+    <table class="cpt">
+      <thead><tr><th>Sense</th><th>Probability</th></tr></thead>
+      <tbody>
+        <tr><td class="hiT">River</td><td>0.35</td></tr>
+        <tr><td class="hiB">Finance</td><td>0.65</td></tr>
+      </tbody>
+    </table>
+    <p style="font-size:12px;color:var(--ink-soft);">Finance is the more common sense in a general news corpus.</p>
+  </div>
+
+  <div class="card">
+    <h3 style="margin-bottom:0.75rem;">Likelihood CPT: P(word | Sense) — selected words</h3>
+    <div style="overflow-x:auto;">
+    <table class="cpt">
+      <thead><tr><th>Word (wᵢ)</th><th>P(wᵢ | River)</th><th>P(wᵢ | Finance)</th></tr></thead>
+      <tbody>
+        <tr><td>river</td><td class="hiT">0.40</td><td>0.001</td></tr>
+        <tr><td>muddy</td><td class="hiT">0.18</td><td>0.002</td></tr>
+        <tr><td>erodes</td><td class="hiT">0.12</td><td>0.001</td></tr>
+        <tr><td>quickly</td><td>0.05</td><td>0.05</td></tr>
+        <tr><td>loan</td><td>0.001</td><td class="hiB">0.22</td></tr>
+        <tr><td>approved</td><td>0.010</td><td class="hiB">0.15</td></tr>
+        <tr><td>interest</td><td>0.010</td><td class="hiB">0.28</td></tr>
+        <tr><td>charged</td><td>0.008</td><td class="hiB">0.17</td></tr>
+        <tr><td>flows</td><td class="hiT">0.22</td><td>0.003</td></tr>
+        <tr><td>deposits</td><td>0.004</td><td class="hiB">0.19</td></tr>
+        <tr><td>flood</td><td class="hiT">0.15</td><td>0.002</td></tr>
+        <tr><td>rate</td><td>0.012</td><td class="hiB">0.20</td></tr>
+      </tbody>
+    </table>
+    </div>
+  </div>
+
+  <div class="card card-accent">
+    <h3 style="color:var(--accent);margin-bottom:0.75rem;">Worked Example — Sentence A</h3>
+    <div class="sentence-strip">
+      <span class="word context-river">muddy</span>
+      <span class="word context-river">river</span>
+      <span class="word target">bank</span>
+      <span class="word context-river">erodes</span>
+      <span class="word context-river">quickly</span>
+    </div>
+    <p style="font-size:13px;color:var(--ink-mid);margin-bottom:0.75rem;">Compute P(Sense | muddy, river, erodes, quickly):</p>
+    <div class="step-trace">
+      <span class="hi">Step 1 — unnormalized joint:</span><br>
+      &nbsp;&nbsp;River: &nbsp; 0.35 × 0.18 × 0.40 × 0.12 × 0.05 = <span class="hiT">0.0001512</span><br>
+      &nbsp;&nbsp;Finance: 0.65 × 0.002 × 0.001 × 0.001 × 0.05 = <span class="hiB">0.000000065</span><br><br>
+      <span class="hi">Step 2 — normalizing constant:</span> 0.0001512 + 0.000000065 ≈ <span class="hi">0.0001513</span><br><br>
+      <span class="hi">Step 3 — posterior:</span><br>
+      &nbsp;&nbsp;P(River | context) ≈ <span class="hiT">0.9996</span> &nbsp; ✓ Clearly River sense
+    </div>
+  </div>
+
+  <!-- EXERCISE 3 -->
+  <div class="ex" id="ex3">
+    <span class="ex-num">03</span>
+    <div class="ex-body">
+      <p><strong>Compute it yourself — Sentence B.</strong> Use the CPT above to compute the unnormalized scores for both senses given:</p>
+      <div class="sentence-strip" style="margin-bottom:0.75rem;">
+        <span class="word context-finance">loan</span>
+        <span class="word context-finance">approved</span>
+        <span class="word target">bank</span>
+        <span class="word context-finance">charged</span>
+        <span class="word context-finance">interest</span>
+      </div>
+      <p>Show your working: multiply the prior by each context word's likelihood for each sense. Which sense wins?</p>
+      <textarea class="sa" id="ex3-ans" placeholder="River score = 0.35 × P(loan|River) × P(approved|River) × P(charged|River) × P(interest|River) = ...&#10;Finance score = 0.65 × ...&#10;Winner: ..."></textarea>
+      <br><button class="reveal-btn" onclick="toggleReveal('ex3-reveal')">Show model answer</button>
+      <div class="reveal-text" id="ex3-reveal">
+        <strong>River:</strong> 0.35 × 0.001 × 0.010 × 0.008 × 0.010 = 0.35 × 8×10⁻¹⁰ = 2.8×10⁻¹⁰<br>
+        <strong>Finance:</strong> 0.65 × 0.22 × 0.15 × 0.17 × 0.28 = 0.65 × 0.001575 ≈ 1.024×10⁻³<br><br>
+        Normalised P(Finance | context) ≈ <strong>0.999997 ≈ 1.0</strong><br>
+        The finance sense wins overwhelmingly — all four context words are strong finance-sense indicators and are extremely unlikely under the river sense.
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ===== SECTION 3: INTERACTIVE CLASSIFIER ===== -->
+  <div class="sec-label">Section 3 — Interactive</div>
+  <h2>Build Your Own 5-Word Context</h2>
+
+  <p style="font-size:14px;color:var(--ink-mid);margin-bottom:1rem;">Click context words to include them in your evidence set. The classifier runs Bayesian inference in real time using the CPT above.</p>
+
+  <div class="wsd-demo">
+    <h3 style="margin-bottom:0.5rem;">Choose 4 context words (the 4 positions around "bank")</h3>
+    <div class="legend">
+      <span class="legend-item"><span class="legend-dot" style="background:var(--teal)"></span>River-leaning words</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--accent2)"></span>Finance-leaning words</span>
+      <span class="legend-item"><span class="legend-dot" style="background:var(--ink-soft)"></span>Neutral</span>
+    </div>
+    <div class="word-toggles" id="word-toggles">
+      <!-- River words -->
+      <span class="wtog" data-word="river" data-pr="0.40" data-pf="0.001" data-cat="river" onclick="toggleWord(this)">river</span>
+      <span class="wtog" data-word="muddy" data-pr="0.18" data-pf="0.002" data-cat="river" onclick="toggleWord(this)">muddy</span>
+      <span class="wtog" data-word="erodes" data-pr="0.12" data-pf="0.001" data-cat="river" onclick="toggleWord(this)">erodes</span>
+      <span class="wtog" data-word="flows" data-pr="0.22" data-pf="0.003" data-cat="river" onclick="toggleWord(this)">flows</span>
+      <span class="wtog" data-word="flood" data-pr="0.15" data-pf="0.002" data-cat="river" onclick="toggleWord(this)">flood</span>
+      <span class="wtog" data-word="current" data-pr="0.13" data-pf="0.008" data-cat="river" onclick="toggleWord(this)">current</span>
+      <span class="wtog" data-word="sediment" data-pr="0.10" data-pf="0.001" data-cat="river" onclick="toggleWord(this)">sediment</span>
+      <!-- Finance words -->
+      <span class="wtog" data-word="loan" data-pr="0.001" data-pf="0.22" data-cat="finance" onclick="toggleWord(this)">loan</span>
+      <span class="wtog" data-word="interest" data-pr="0.010" data-pf="0.28" data-cat="finance" onclick="toggleWord(this)">interest</span>
+      <span class="wtog" data-word="approved" data-pr="0.010" data-pf="0.15" data-cat="finance" onclick="toggleWord(this)">approved</span>
+      <span class="wtog" data-word="charged" data-pr="0.008" data-pf="0.17" data-cat="finance" onclick="toggleWord(this)">charged</span>
+      <span class="wtog" data-word="deposits" data-pr="0.004" data-pf="0.19" data-cat="finance" onclick="toggleWord(this)">deposits</span>
+      <span class="wtog" data-word="rate" data-pr="0.012" data-pf="0.20" data-cat="finance" onclick="toggleWord(this)">rate</span>
+      <span class="wtog" data-word="credit" data-pr="0.003" data-pf="0.18" data-cat="finance" onclick="toggleWord(this)">credit</span>
+      <!-- Neutral -->
+      <span class="wtog" data-word="quickly" data-pr="0.05" data-pf="0.05" data-cat="neutral" onclick="toggleWord(this)">quickly</span>
+      <span class="wtog" data-word="near" data-pr="0.06" data-pf="0.04" data-cat="neutral" onclick="toggleWord(this)">near</span>
+      <span class="wtog" data-word="large" data-pr="0.04" data-pf="0.06" data-cat="neutral" onclick="toggleWord(this)">large</span>
+    </div>
+
+    <div style="background:var(--surface3);border-radius:var(--radius-sm);padding:0.75rem 1rem;margin:0.75rem 0;font-size:13px;color:var(--ink-mid);">
+      <strong style="color:var(--ink);">Your sentence:</strong>
+      <span id="live-sentence" style="font-family:'IBM Plex Mono',monospace;color:var(--accent);margin-left:8px;">[ select words above ]</span>
+      <strong style="color:var(--accent);font-family:'IBM Plex Mono',monospace;"> bank </strong>
+      <span id="live-sentence-right" style="font-family:'IBM Plex Mono',monospace;color:var(--accent);"></span>
+    </div>
+
+    <div class="step-trace" id="live-calc" style="min-height:70px;">
+      Select words above to see the Bayesian calculation...
+    </div>
+
+    <div class="posterior-display">
+      <div class="post-card">
+        <div class="post-sense river">River sense</div>
+        <div class="post-val river" id="post-river">—</div>
+        <div class="post-bar"><div class="post-bar-fill pbf-river" id="pbar-river" style="width:50%"></div></div>
+      </div>
+      <div class="post-card">
+        <div class="post-sense finance">Finance sense</div>
+        <div class="post-val finance" id="post-finance">—</div>
+        <div class="post-bar"><div class="post-bar-fill pbf-finance" id="pbar-finance" style="width:50%"></div></div>
+      </div>
+    </div>
+    <div class="decision-badge" id="decision-badge" style="background:var(--surface3);color:var(--ink-soft);">Select words to see classification</div>
+  </div>
+
+  <!-- EXERCISE 4 -->
+  <div class="ex" id="ex4">
+    <span class="ex-num">04</span>
+    <div class="ex-body">
+      <p><strong>Conflicting evidence.</strong> Using the interactive classifier, build a sentence that mixes <em>one strong river-sense word</em> with <em>one strong finance-sense word</em> and two neutral words. What happens to the posterior, and why?</p>
+      <textarea class="sa" id="ex4-ans" placeholder="Words I chose: ...&#10;Posterior result: ...&#10;What this shows about conflicting evidence: ..."></textarea>
+      <br><button class="reveal-btn" onclick="toggleReveal('ex4-reveal')">Show model answer</button>
+      <div class="reveal-text" id="ex4-reveal">
+        E.g., choosing "river" (P=0.40/0.001), "loan" (P=0.001/0.22), "quickly" (neutral), "near" (neutral):<br><br>
+        River score ∝ 0.35 × 0.40 × 0.001 × 0.05 × 0.06 ≈ 4.2×10⁻⁷<br>
+        Finance score ∝ 0.65 × 0.001 × 0.22 × 0.05 × 0.04 ≈ 2.86×10⁻⁷<br><br>
+        The posterior is roughly 60%/40% — genuinely ambiguous! This illustrates how Bayesian inference gracefully handles conflicting evidence rather than forcing a hard decision. The model integrates all clues and reports uncertainty when the evidence is mixed.
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ===== SECTION 4: SENTENCE EXERCISES ===== -->
+  <div class="sec-label">Section 4 — Exercises</div>
+  <h2>Classify These 5-Word Sentences</h2>
+
+  <p style="font-size:14px;color:var(--ink-mid);margin-bottom:1.25rem;">For each sentence below, use the CPT table to decide the most likely sense of "bank". Then answer the follow-up question.</p>
+
+  <!-- SENTENCE C -->
+  <div class="ex" id="ex5">
+    <span class="ex-num">05</span>
+    <div class="ex-body">
+      <p><strong>Sentence C — Classify the sense.</strong></p>
+      <div class="sentence-strip">
+        <span class="word neutral">flood</span>
+        <span class="word neutral">waters</span>
+        <span class="word target">bank</span>
+        <span class="word neutral">collapsed</span>
+        <span class="word neutral">overnight</span>
+      </div>
+      <p>Given the words <em>flood, waters, collapsed, overnight</em>, which sense is most likely? Use the CPT (or estimate from inspection) and justify.</p>
+      <ul class="opts" id="ex5-opts">
+        <li><label><input type="radio" name="ex5" value="a"> Finance sense — "collapsed" is a strong finance word</label></li>
+        <li><label><input type="radio" name="ex5" value="b"> River sense — "flood" and "waters" are strong river-sense indicators; "collapsed" and "overnight" are roughly neutral or slightly river-leaning in this context</label></li>
+        <li><label><input type="radio" name="ex5" value="c"> Completely ambiguous — no useful context clues</label></li>
+        <li><label><input type="radio" name="ex5" value="d"> Finance sense — because the word "bank" appears in the middle</label></li>
+      </ul>
+      <div class="fb" id="ex5-fb"></div>
+      <button class="btn" onclick="checkMCQ('ex5','b','Correct. "flood" has P(flood|River)=0.15 vs P(flood|Finance)=0.002 — a ratio of 75:1 for River. "waters" is similarly river-leaning. These two words dominate the product and push the posterior strongly toward the River sense, despite "collapsed" and "overnight" being neutral.')">Check</button>
+    </div>
+  </div>
+
+  <!-- SENTENCE D -->
+  <div class="ex" id="ex6">
+    <span class="ex-num">06</span>
+    <div class="ex-body">
+      <p><strong>Sentence D — Compute and classify.</strong></p>
+      <div class="sentence-strip">
+        <span class="word context-finance">rate</span>
+        <span class="word context-finance">cut</span>
+        <span class="word target">bank</span>
+        <span class="word context-finance">deposits</span>
+        <span class="word context-finance">grew</span>
+      </div>
+      <p>Using P(cut|River)=0.008, P(cut|Finance)=0.12 and P(grew|River)=0.015, P(grew|Finance)=0.09 (in addition to the CPT), compute unnormalized scores and identify the winning sense.</p>
+      <textarea class="sa" id="ex6-ans" placeholder="River = 0.35 × ...&#10;Finance = 0.65 × ...&#10;Winner: ..."></textarea>
+      <br><button class="reveal-btn" onclick="toggleReveal('ex6-reveal')">Show model answer</button>
+      <div class="reveal-text" id="ex6-reveal">
+        <strong>River:</strong> 0.35 × 0.012 × 0.008 × 0.004 × 0.015 ≈ 0.35 × 5.76×10⁻⁹ ≈ 2.02×10⁻⁹<br>
+        <strong>Finance:</strong> 0.65 × 0.20 × 0.12 × 0.19 × 0.09 ≈ 0.65 × 4.1×10⁻⁴ ≈ 2.67×10⁻⁴<br><br>
+        Finance wins with a ratio of >100,000:1. Every context word (rate, cut, deposits, grew) is a strong finance indicator. The posterior is essentially P(Finance|context) ≈ 1.0.
+      </div>
+    </div>
+  </div>
+
+  <!-- SENTENCE E — ambiguous -->
+  <div class="ex" id="ex7">
+    <span class="ex-num">07</span>
+    <div class="ex-body">
+      <p><strong>Sentence E — The hard case.</strong></p>
+      <div class="sentence-strip">
+        <span class="word neutral">near</span>
+        <span class="word neutral">the</span>
+        <span class="word target">bank</span>
+        <span class="word neutral">they</span>
+        <span class="word neutral">waited</span>
+      </div>
+      <p>The surrounding words are all neutral or function words. What does the Bayesian model do here, and what does this reveal about a limitation of the CPT approach?</p>
+      <ul class="opts" id="ex7-opts">
+        <li><label><input type="radio" name="ex7" value="a"> The model crashes because it cannot handle function words</label></li>
+        <li><label><input type="radio" name="ex7" value="b"> The model returns a posterior close to the prior (≈ 35% River, 65% Finance) because neutral words provide almost no likelihood ratio — evidence is uninformative</label></li>
+        <li><label><input type="radio" name="ex7" value="c"> The model always predicts Finance sense when it is uncertain</label></li>
+        <li><label><input type="radio" name="ex7" value="d"> The model ignores function words and defaults to the previous sentence's classification</label></li>
+      </ul>
+      <div class="fb" id="ex7-fb"></div>
+      <button class="btn" onclick="checkMCQ('ex7','b','Exactly right. When all P(wᵢ|River)/P(wᵢ|Finance) ratios ≈ 1, the product of likelihoods cancels and the posterior collapses to the prior. This reveals the model\'s dependence on informative context words — if none are present, it can only fall back on base rates. A real WSD system would use wider context windows or syntactic features to handle such cases.')">Check</button>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ===== SECTION 5: INFERENCE MECHANICS ===== -->
+  <div class="sec-label">Section 5</div>
+  <h2>Inference Mechanics in WSD</h2>
+
+  <div class="callout warn">
+    <span class="callout-icon">⚡</span>
+    <span class="callout-text"><strong>Why WSD inference is tractable:</strong> The naive Bayes assumption (context words independent given Sense) means we never need to sum over exponentially many combinations. Each word contributes independently as a multiplicative factor.</span>
+  </div>
+
+  <div class="card card-purple">
+    <h3 style="color:var(--purple);margin-bottom:0.75rem;">Exact vs. Approximate in WSD</h3>
+    <div class="two-col">
+      <div>
+        <p style="font-size:12px;font-weight:700;color:var(--purple);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Exact (Naive Bayes)</p>
+        <p style="font-size:13px;color:var(--ink-mid);">With the independence assumption, the product over context words is computed exactly. O(|Senses| × |Words|). This is what the CPT approach does.</p>
+      </div>
+      <div>
+        <p style="font-size:12px;font-weight:700;color:var(--ink-soft);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:6px;">Without the assumption</p>
+        <p style="font-size:13px;color:var(--ink-mid);">We'd need P(w₁,w₂,w₄,w₅ | Sense) — a joint over all context words. With a vocabulary of 50,000 words and 4 positions, this table would be astronomically large.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- EXERCISE 8 -->
+  <div class="ex" id="ex8">
+    <span class="ex-num">08</span>
+    <div class="ex-body">
+      <p><strong>Marginalizing the sense.</strong> Suppose instead of computing P(Sense | words), you wanted to compute P(w₃ = "erodes" | w₁ = "river", w₅ = "quickly") — the probability of a context word given two others, marginalizing out the Sense. Write this as a sum and explain each term.</p>
+      <textarea class="sa" id="ex8-ans" placeholder="P(erodes | river, quickly) = Σ_s  P(erodes | s) × P(s | river, quickly)&#10;&#10;where the sum is over s ∈ {River, Finance}. Explain: ..."></textarea>
+      <br><button class="reveal-btn" onclick="toggleReveal('ex8-reveal')">Show model answer</button>
+      <div class="reveal-text" id="ex8-reveal">
+        P(erodes | river, quickly) = Σ<sub>s ∈ {R,F}</sub> P(erodes | s) · P(s | river, quickly)<br><br>
+        <strong>Term 1 (s=River):</strong> P(erodes|River) × P(River|river,quickly) = 0.12 × 0.9996 ≈ 0.1199<br>
+        <strong>Term 2 (s=Finance):</strong> P(erodes|Finance) × P(Finance|river,quickly) = 0.001 × 0.0004 ≈ 0.0000004<br><br>
+        Total ≈ 0.12. The Sense node acts as the bottleneck — to go from observed context words to a prediction about another context word, we must pass through the hidden Sense, which is the only parent of all context nodes. This is message passing through a hidden variable.
+      </div>
+    </div>
+  </div>
+
+  <hr>
+
+  <!-- ===== SECTION 6: CHALLENGE ===== -->
+  <div class="sec-label">Challenge</div>
+  <h2>Open-Ended: Extend the Model</h2>
+
+  <div class="card card-coral">
+    <h3 style="color:var(--coral);margin-bottom:0.75rem;">Design Challenge — A Third Sense</h3>
+    <p style="font-size:14px;color:var(--ink-mid);margin-bottom:0.75rem;">The word "bank" actually has a third sense: a <em>data storage</em> sense (as in "memory bank" or "blood bank"). This sense requires updating the model.</p>
+    <p style="font-size:14px;color:var(--ink-mid);margin-bottom:0.75rem;">Answer all four parts in the space below:</p>
+    <ol style="font-size:13px;color:var(--ink-mid);padding-left:1.25rem;line-height:2.2;">
+      <li>Write a 5-word sentence using "bank" in the storage sense.</li>
+      <li>List 3 context words you'd add to the CPT for this new sense and assign rough P(word | Storage) values.</li>
+      <li>How does adding a third sense change the inference formula? Rewrite it.</li>
+      <li>How would the prior P(Sense) need to be updated, and why must it still sum to 1?</li>
+    </ol>
+    <textarea class="sa" id="challenge-ans" style="min-height:160px;margin-top:0.75rem;" placeholder="1. Sentence: ...&#10;2. CPT additions: memory → P=0.35, organ → P=0.22, blood → P=0.28&#10;3. New formula: P(Sense|words) ∝ P(Sense) × ...&#10;4. Prior update: ..."></textarea>
+    <br><button class="reveal-btn" onclick="toggleReveal('challenge-reveal')">Show model answer</button>
+    <div class="reveal-text" id="challenge-reveal">
+      <strong>1. Sentence:</strong> "memory bank stores all data" — words: memory, stores, all, data<br><br>
+      <strong>2. CPT additions (storage sense):</strong><br>
+      &nbsp; memory: P(memory|Storage) = 0.35, P(memory|River) = 0.002, P(memory|Finance) = 0.005<br>
+      &nbsp; blood: P(blood|Storage) = 0.28, P(blood|River) = 0.003, P(blood|Finance) = 0.001<br>
+      &nbsp; data: P(data|Storage) = 0.22, P(data|River) = 0.003, P(data|Finance) = 0.04<br><br>
+      <strong>3. Updated formula:</strong><br>
+      P(Sense | w₁,…,w₄) ∝ P(Sense) × ∏ᵢ P(wᵢ | Sense)<br>
+      where Sense ∈ {River, Finance, Storage} — the sum over three terms in normalization.<br><br>
+      <strong>4. Prior update:</strong> We need P(River) + P(Finance) + P(Storage) = 1. If Storage is rarer in a news corpus, we might set P(Storage) = 0.05 and adjust: P(River) = 0.33, P(Finance) = 0.62. The constraint to sum to 1 is required because Sense is a proper probability distribution over mutually exclusive, exhaustive outcomes.
+    </div>
+  </div>
+
+</div>
+
+<!-- Score badge -->
+<div class="score-badge">
+  <span>Score</span>
+  <span class="score-num" id="score-num">0 / 5</span>
+</div>
+
+<script>
+let score = 0;
+let answered = {};
+const totalMCQ = 5;
+const totalEx = 9;
+
+function updateProgress() {
+  const n = Object.keys(answered).length;
+  const pct = Math.round(n / totalEx * 100);
+  document.getElementById('prog-fill').style.width = pct + '%';
+  document.getElementById('prog-text').textContent = n + ' / ' + totalEx + ' answered';
+  document.getElementById('score-num').textContent = score + ' / ' + totalMCQ;
+}
+
+function checkMCQ(exId, correct, fbOk) {
+  if (answered[exId]) return;
+  const sel = document.querySelector(`input[name="${exId}"]:checked`);
+  if (!sel) { alert('Please select an answer.'); return; }
+  const val = sel.value;
+  const opts = document.getElementById(exId + '-opts');
+  opts.querySelectorAll('label').forEach(l => {
+    const inp = l.querySelector('input');
+    if (inp.value === correct) l.classList.add('correct');
+    else if (inp.value === val && val !== correct) l.classList.add('wrong');
+  });
+  opts.querySelectorAll('input').forEach(i => i.disabled = true);
+  const fb = document.getElementById(exId + '-fb');
+  if (val === correct) {
+    fb.className = 'fb ok';
+    fb.innerHTML = '&#10003; ' + fbOk;
+    score++;
+  } else {
+    fb.className = 'fb err';
+    fb.innerHTML = '&#10007; Not quite. ' + fbOk;
+  }
+  answered[exId] = true;
+  updateProgress();
+}
+
+function toggleReveal(id) {
+  const el = document.getElementById(id);
+  const btn = el.previousElementSibling;
+  el.classList.toggle('on');
+  btn.textContent = el.classList.contains('on') ? 'Hide answer' : 'Show model answer';
+  const exId = id.replace('-reveal','');
+  if (!answered[exId]) { answered[exId] = true; updateProgress(); }
+}
+
+// track textareas
+['ex3-ans','ex4-ans','ex6-ans','ex8-ans','challenge-ans'].forEach(id => {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.addEventListener('input', function() {
+    const exId = id.replace('-ans','');
+    if (this.value.trim().length > 15 && !answered[exId]) {
+      answered[exId] = true; updateProgress();
+    }
+  });
+});
+
+// ---- INTERACTIVE WSD CLASSIFIER ----
+const selectedWords = new Map(); // word -> {pr, pf, cat}
+const PRIOR_R = 0.35, PRIOR_F = 0.65;
+
+function toggleWord(el) {
+  const w = el.dataset.word;
+  if (selectedWords.has(w)) {
+    selectedWords.delete(w);
+    el.className = 'wtog';
+  } else {
+    const cat = el.dataset.cat;
+    selectedWords.set(w, {
+      pr: parseFloat(el.dataset.pr),
+      pf: parseFloat(el.dataset.pf),
+      cat
+    });
+    el.className = 'wtog active-' + cat;
+  }
+  runClassifier();
+}
+
+function runClassifier() {
+  const words = [...selectedWords.entries()];
+  const sentEl = document.getElementById('live-sentence');
+  const calcEl = document.getElementById('live-calc');
+
+  if (words.length === 0) {
+    sentEl.textContent = '[ select words above ]';
+    document.getElementById('live-sentence-right').textContent = '';
+    document.getElementById('post-river').textContent = '—';
+    document.getElementById('post-finance').textContent = '—';
+    document.getElementById('pbar-river').style.width = '50%';
+    document.getElementById('pbar-finance').style.width = '50%';
+    document.getElementById('decision-badge').textContent = 'Select words to see classification';
+    document.getElementById('decision-badge').style.background = 'var(--surface3)';
+    document.getElementById('decision-badge').style.color = 'var(--ink-soft)';
+    calcEl.innerHTML = 'Select words above to see the Bayesian calculation...';
+    return;
+  }
+
+  let scoreR = PRIOR_R, scoreF = PRIOR_F;
+  const half = Math.ceil(words.length / 2);
+  const leftWords = words.slice(0, half).map(([w]) => w).join(' ');
+  const rightWords = words.slice(half).map(([w]) => w).join(' ');
+  sentEl.textContent = leftWords + ' ';
+  document.getElementById('live-sentence-right').textContent = ' ' + rightWords;
+
+  let calcHTML = '<span class="hi">Unnormalized scores:</span><br>';
+  calcHTML += '&nbsp; River = ' + PRIOR_R;
+  let calcR = PRIOR_R + '';
+  let calcF = PRIOR_F + '';
+  calcHTML += '&nbsp;|&nbsp; Finance = ' + PRIOR_F;
+
+  words.forEach(([w, d]) => {
+    scoreR *= d.pr;
+    scoreF *= d.pf;
+    calcHTML += `<br>&nbsp;&nbsp;&nbsp;× P(<span class="${d.cat==='river'?'hiT':d.cat==='finance'?'hiB':'hi'}">${w}</span>|·) = <span class="hiT">${d.pr}</span> | <span class="hiB">${d.pf}</span>`;
+  });
+
+  const norm = scoreR + scoreF;
+  const pR = scoreR / norm, pF = scoreF / norm;
+
+  calcHTML += `<br><br><span class="hi">Normalized: </span>P(River|context) = <span class="hiT">${(pR*100).toFixed(2)}%</span> &nbsp; P(Finance|context) = <span class="hiB">${(pF*100).toFixed(2)}%</span>`;
+  calcEl.innerHTML = calcHTML;
+
+  document.getElementById('post-river').textContent = (pR * 100).toFixed(1) + '%';
+  document.getElementById('post-finance').textContent = (pF * 100).toFixed(1) + '%';
+  document.getElementById('pbar-river').style.width = (pR * 100) + '%';
+  document.getElementById('pbar-finance').style.width = (pF * 100) + '%';
+
+  const badge = document.getElementById('decision-badge');
+  if (Math.abs(pR - pF) < 0.15) {
+    badge.textContent = 'Ambiguous — mixed evidence';
+    badge.style.background = 'rgba(232,184,75,0.1)';
+    badge.style.color = 'var(--accent)';
+  } else if (pR > pF) {
+    badge.textContent = '→ River sense (score: ' + (pR*100).toFixed(1) + '%)';
+    badge.style.background = 'rgba(45,212,191,0.1)';
+    badge.style.color = 'var(--teal)';
+  } else {
+    badge.textContent = '→ Finance sense (score: ' + (pF*100).toFixed(1) + '%)';
+    badge.style.background = 'rgba(59,130,246,0.1)';
+    badge.style.color = 'var(--accent2)';
+  }
+}
+
+updateProgress();
+</script>
+</body>
+</html>
