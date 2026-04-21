@@ -1,0 +1,729 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HMM Forward Algorithm — Next Word Prediction Lab</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500&family=DM+Serif+Display&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0d0d1a;font-family:'JetBrains Mono',monospace;color:#e8e8f0;font-size:13px;line-height:1.6;padding:16px}
+:root{
+  --accent:#e94560;--accent2:#16c79a;--accent3:#f5a623;
+  --cell:#16213e;--code:#0f3460;--out:#090918;
+  --border:#2a2a4a;--muted:#8888a8;--text:#e8e8f0
+}
+.notebook{max-width:900px;margin:0 auto;padding-bottom:40px}
+.nb-header{background:linear-gradient(135deg,#1a1a2e,#16213e);border:1px solid var(--border);border-radius:12px;padding:22px 26px;margin-bottom:16px;display:flex;align-items:center;gap:14px}
+.nb-icon{width:40px;height:40px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0}
+.nb-title{font-family:'DM Serif Display',serif;font-size:22px;color:#fff}
+.nb-sub{font-size:11px;color:var(--muted);margin-top:3px}
+.cell{border:1px solid var(--border);border-radius:10px;margin-bottom:13px;overflow:hidden;background:var(--cell)}
+.cell-header{display:flex;align-items:center;gap:8px;padding:9px 15px;background:var(--code);border-bottom:1px solid var(--border);cursor:pointer;user-select:none}
+.cell-type{font-size:10px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;min-width:52px}
+.cell-title{font-size:12px;color:var(--accent2);flex:1}
+.run-btn{background:var(--accent);border:none;color:#fff;font-size:10px;padding:3px 11px;border-radius:4px;cursor:pointer;font-family:inherit;transition:opacity .15s}
+.run-btn:hover{opacity:.83}
+.cell-body{padding:14px 16px;background:var(--out)}
+.md-cell .cell-body{background:var(--cell);line-height:1.75}
+.code-block{background:#05050f;border-radius:7px;padding:13px 15px;overflow-x:auto;font-size:12px;line-height:1.75;border:1px solid var(--border)}
+.code-block pre{white-space:pre;color:#c8d3f5}
+.kw{color:#bb9af7}.fn{color:#7dcfff}.st{color:#9ece6a}.cm{color:#565f89;font-style:italic}.nu{color:#ff9e64}.op{color:#89dceb}
+.output-section{margin-top:11px;border-top:1px solid var(--border);padding-top:11px}
+.section-label{font-size:10px;color:var(--muted);margin-bottom:7px;letter-spacing:.06em;text-transform:uppercase}
+h1,h2,h3{font-family:'DM Serif Display',serif;font-weight:400}
+h1{font-size:23px;color:#fff;margin-bottom:9px}
+h2{font-size:17px;color:var(--accent2);margin-bottom:7px;margin-top:15px}
+h3{font-size:14px;color:var(--accent3);margin-bottom:5px;margin-top:11px}
+p{font-size:13px;color:var(--text);margin-bottom:8px;line-height:1.75;font-family:'JetBrains Mono',monospace}
+.math-box{background:#05050f;border:1px solid var(--border);border-radius:7px;padding:13px 15px;margin:10px 0;font-size:12px;color:#89dceb;line-height:2}
+.badge{display:inline-block;background:var(--accent);color:#fff;font-size:10px;padding:2px 9px;border-radius:10px;margin:0 3px;vertical-align:middle}
+.badge.g{background:#16c79a;color:#000}.badge.y{background:#f5a623;color:#000}
+table.prob-table{width:100%;border-collapse:collapse;font-size:11px;margin-top:8px}
+table.prob-table th{background:#1a1a3e;color:var(--accent2);padding:5px 7px;text-align:center;border:1px solid var(--border)}
+table.prob-table td{padding:5px 7px;text-align:center;border:1px solid var(--border);color:var(--text)}
+table.prob-table tr:nth-child(even) td{background:#0d0d20}
+.result-output{background:#05050f;border:1px solid var(--accent2);border-radius:7px;padding:11px 14px;color:var(--accent2);font-size:12px;line-height:1.85;white-space:pre-wrap}
+.pred-bar{display:flex;gap:7px;flex-wrap:wrap;margin-top:7px}
+.pred-pill{background:#1a1a3e;border:1px solid var(--border);border-radius:20px;padding:4px 13px;font-size:12px;cursor:default;color:var(--text)}
+.pred-pill.top1{background:var(--accent);color:#fff;border-color:var(--accent)}
+.pred-pill.top2{background:#2a1a3e;border-color:#bb9af7;color:#bb9af7}
+.pred-pill.top3{background:#1a2a3e;border-color:#7dcfff;color:#7dcfff}
+.step-controls{display:flex;align-items:center;gap:9px;margin:10px 0}
+.step-btn{background:#1a1a3e;border:1px solid var(--border);color:var(--text);padding:5px 13px;border-radius:5px;cursor:pointer;font-family:inherit;font-size:12px;transition:background .15s}
+.step-btn:hover{background:#2a2a5e}
+.step-info{font-size:11px;color:var(--muted)}
+.alpha-grid{display:grid;gap:7px;margin-top:8px}
+.alpha-row{display:flex;align-items:center;gap:7px}
+.alpha-label{font-size:10px;min-width:100px}
+.alpha-bar-wrap{flex:1;background:#05050f;border-radius:3px;height:21px;position:relative;overflow:hidden;border:1px solid var(--border)}
+.alpha-bar{height:100%;border-radius:3px;transition:width .4s ease;display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:9px;font-weight:500;min-width:2px}
+.alpha-val{font-size:10px;color:var(--muted);min-width:72px;text-align:right}
+.note-box{background:#05050f;border-left:3px solid var(--accent3);border-radius:0 7px 7px 0;padding:9px 13px;margin:9px 0;font-size:12px;color:var(--muted)}
+.interactive-demo{background:#05050f;border:1px solid var(--border);border-radius:9px;padding:15px;margin-top:10px}
+.demo-label{font-size:11px;color:var(--muted);margin-bottom:7px;letter-spacing:.06em;text-transform:uppercase}
+.token-row{display:flex;flex-wrap:wrap;gap:7px;margin-top:8px}
+.token{background:#1a1a3e;border:1px solid var(--border);border-radius:5px;padding:4px 11px;font-size:12px;cursor:pointer;transition:all .15s}
+.token:hover{border-color:var(--accent2);color:var(--accent2)}
+.token.active{background:var(--accent2);color:#000;border-color:var(--accent2);font-weight:500}
+.run-all-btn{background:var(--accent);border:none;color:#fff;font-size:13px;padding:9px 20px;border-radius:7px;cursor:pointer;font-family:inherit;width:100%;transition:opacity .15s;margin-top:10px}
+.run-all-btn:hover{opacity:.88}
+.trellis-wrap{overflow-x:auto;margin-top:10px}
+.inline-badge{display:inline-block;background:#1a2a3e;border:1px solid #7dcfff;color:#7dcfff;font-size:10px;padding:1px 6px;border-radius:3px;margin:0 2px}
+</style>
+</head>
+<body>
+<div class="notebook">
+
+<!-- Header -->
+<div class="nb-header">
+  <div class="nb-icon">🧠</div>
+  <div>
+    <div class="nb-title">HMM Forward Algorithm — Next Word Prediction</div>
+    <div class="nb-sub">Interactive Colab Lab &nbsp;|&nbsp; Python 3.10 &nbsp;|&nbsp; Use case: Email &amp; Sentence Completion</div>
+  </div>
+</div>
+
+<!-- ═══ CELL 1: Problem Description ═══════════════════════════════════════ -->
+<div class="cell">
+  <div class="cell-header" onclick="toggleCell(this)">
+    <span class="cell-type">markdown</span>
+    <span class="cell-title">📋 Problem Description</span>
+  </div>
+  <div class="cell-body md-cell">
+    <h1>Hidden Markov Model — Forward Algorithm</h1>
+    <h2>Problem Statement</h2>
+    <p>We want to predict the <span class="badge">next word</span> in a partially written sentence or email using an HMM. The core insight: <strong>hidden states</strong> represent grammatical/semantic context (e.g. topic, POS tag), while <strong>observations</strong> are the actual words the user types.</p>
+    <h3>Two Use Cases</h3>
+    <p><span class="badge g">Use Case A</span> <strong>Email writing assistant</strong> — predict the next word given subject &amp; partial body (e.g. "Please find attached the…")</p>
+    <p><span class="badge y">Use Case B</span> <strong>Sentence completion</strong> — general next-word prediction for any context (e.g. "The error in the data…")</p>
+    <h2>Why HMM?</h2>
+    <p>Language has latent structure. The word "report" after "please find attached the" is likely because we are in a <em>FORMAL_EMAIL state</em> — a state we cannot directly observe but can <em>infer</em> probabilistically via the Forward Algorithm. Unlike n-grams, HMMs explicitly model this hidden context.</p>
+    <div class="math-box">
+HMM = ( S, V, A, B, π )<br>
+S = hidden states  e.g. {FORMAL_EMAIL, CASUAL_EMAIL, TECHNICAL, CLOSING}<br>
+V = vocabulary of observed words<br>
+A = transition matrix   A[i][j] = P(state_j | state_i)<br>
+B = emission matrix     B[s][w]  = P(word_w | state_s)<br>
+π = initial state distribution   π[s] = P(state_s at t=1)
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CELL 2: Approach ══════════════════════════════════════════════════ -->
+<div class="cell">
+  <div class="cell-header" onclick="toggleCell(this)">
+    <span class="cell-type">markdown</span>
+    <span class="cell-title">🔬 Approach — Forward Algorithm Step-by-Step</span>
+  </div>
+  <div class="cell-body md-cell">
+    <h2>The Forward Algorithm</h2>
+    <p>The forward variable <span class="inline-badge">α_t(s)</span> = probability of having observed all words up to time t AND being in state s at time t. It is computed via dynamic programming (left-to-right recursion).</p>
+    <div class="math-box">
+① Initialization (t = 1):<br>
+   α₁(s) = π(s) · B(s, w₁)    for all states s<br><br>
+② Recursion (t = 2 … T):<br>
+   α_t(s) = [ Σ_{s'} α_{t-1}(s') · A(s' → s) ] · B(s, w_t)<br><br>
+③ Next-word scoring (after seeing T words):<br>
+   score(w_next) = Σ_s [ Σ_{s'} α_T(s') · A(s' → s) ] · B(s, w_next)<br><br>
+④ Return top-k words by score → predictions
+    </div>
+    <div class="note-box">💡 Normalization at each step prevents floating-point underflow for long sequences. The normalized α still gives correct relative rankings for next-word prediction.</div>
+    <h3>Key Insight</h3>
+    <p>At the end of the observed sequence, <span class="inline-badge">α_T</span> encodes a <em>belief distribution</em> over which hidden state we are in. We then project forward through A and B to score every candidate next word — no Viterbi path needed, just a weighted sum.</p>
+  </div>
+</div>
+
+<!-- ═══ CELL 3: Setup ═════════════════════════════════════════════════════ -->
+<div class="cell">
+  <div class="cell-header" onclick="toggleCell(this)">
+    <span class="cell-type">code [1]</span>
+    <span class="cell-title">⚙️ Setup — imports &amp; HMM parameters</span>
+    <button class="run-btn" onclick="runCell(event,'setup')">▶ Run</button>
+  </div>
+  <div class="cell-body">
+    <div class="code-block"><pre><span class="kw">import</span> numpy <span class="kw">as</span> np
+<span class="kw">from</span> collections <span class="kw">import</span> defaultdict
+
+<span class="cm"># ── Hidden States ──────────────────────────────────────────────────────</span>
+states = [<span class="st">"FORMAL_EMAIL"</span>, <span class="st">"CASUAL_EMAIL"</span>, <span class="st">"TECHNICAL"</span>, <span class="st">"CLOSING"</span>]
+n_states = <span class="nu">4</span>
+
+<span class="cm"># ── Initial State Distribution π ───────────────────────────────────────</span>
+<span class="cm"># P(starting state) — formal emails are most common</span>
+pi = np.array([<span class="nu">0.45</span>, <span class="nu">0.20</span>, <span class="nu">0.25</span>, <span class="nu">0.10</span>])
+
+<span class="cm"># ── Transition Matrix A[i][j] = P(state_j | state_i) ──────────────────</span>
+<span class="cm"># Rows = current state, Cols = next state</span>
+A = np.array([
+  [<span class="nu">0.60</span>, <span class="nu">0.10</span>, <span class="nu">0.20</span>, <span class="nu">0.10</span>],  <span class="cm"># from FORMAL_EMAIL</span>
+  [<span class="nu">0.15</span>, <span class="nu">0.55</span>, <span class="nu">0.15</span>, <span class="nu">0.15</span>],  <span class="cm"># from CASUAL_EMAIL</span>
+  [<span class="nu">0.20</span>, <span class="nu">0.10</span>, <span class="nu">0.60</span>, <span class="nu">0.10</span>],  <span class="cm"># from TECHNICAL</span>
+  [<span class="nu">0.10</span>, <span class="nu">0.20</span>, <span class="nu">0.10</span>, <span class="nu">0.60</span>],  <span class="cm"># from CLOSING</span>
+])
+
+<span class="kw">print</span>(<span class="st">"✅ States      :"</span>, states)
+<span class="kw">print</span>(<span class="st">"✅ π           :"</span>, pi)
+<span class="kw">print</span>(<span class="st">"✅ A shape     :"</span>, A.shape)
+<span class="kw">print</span>(<span class="st">"✅ Row sums A  :"</span>, A.sum(axis=<span class="nu">1</span>))  <span class="cm"># should all be 1.0</span></pre></div>
+    <div class="output-section" id="setup-out" style="display:none">
+      <div class="section-label">Output</div>
+      <div class="result-output">✅ States      : ['FORMAL_EMAIL', 'CASUAL_EMAIL', 'TECHNICAL', 'CLOSING']
+✅ π           : [0.45 0.20 0.25 0.10]
+✅ A shape     : (4, 4)
+✅ Row sums A  : [1. 1. 1. 1.]</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CELL 4: Emission Matrix ══════════════════════════════════════════ -->
+<div class="cell">
+  <div class="cell-header" onclick="toggleCell(this)">
+    <span class="cell-type">code [2]</span>
+    <span class="cell-title">📊 Emission Matrix B — Word Probabilities per State</span>
+    <button class="run-btn" onclick="runCell(event,'emission')">▶ Run</button>
+  </div>
+  <div class="cell-body">
+    <div class="code-block"><pre><span class="cm"># ── Vocabulary ─────────────────────────────────────────────────────────</span>
+vocab = {
+  <span class="st">"please"</span>:<span class="nu">0</span>, <span class="st">"find"</span>:<span class="nu">1</span>, <span class="st">"attached"</span>:<span class="nu">2</span>, <span class="st">"the"</span>:<span class="nu">3</span>, <span class="st">"report"</span>:<span class="nu">4</span>,
+  <span class="st">"meeting"</span>:<span class="nu">5</span>, <span class="st">"schedule"</span>:<span class="nu">6</span>, <span class="st">"thanks"</span>:<span class="nu">7</span>, <span class="st">"regards"</span>:<span class="nu">8</span>,
+  <span class="st">"hey"</span>:<span class="nu">9</span>, <span class="st">"sure"</span>:<span class="nu">10</span>, <span class="st">"cool"</span>:<span class="nu">11</span>, <span class="st">"function"</span>:<span class="nu">12</span>,
+  <span class="st">"error"</span>:<span class="nu">13</span>, <span class="st">"data"</span>:<span class="nu">14</span>, <span class="st">"sincerely"</span>:<span class="nu">15</span>, <span class="st">"best"</span>:<span class="nu">16</span>
+}
+
+<span class="cm"># ── Emission Matrix B[state][word] ─────────────────────────────────────</span>
+<span class="cm"># Each row sums to 1.0  (probability distribution over vocab)</span>
+B = np.array([
+<span class="cm">#  plse  find  attch  the   rep   mtng  sched  thks  rgds  hey   sure  cool  func  err   data  sinc  best</span>
+  [<span class="nu">.10</span>, <span class="nu">.10</span>, <span class="nu">.12</span>, <span class="nu">.10</span>, <span class="nu">.12</span>, <span class="nu">.10</span>, <span class="nu">.08</span>, <span class="nu">.05</span>, <span class="nu">.05</span>, <span class="nu">.01</span>, <span class="nu">.02</span>, <span class="nu">.01</span>, <span class="nu">.03</span>, <span class="nu">.03</span>, <span class="nu">.03</span>, <span class="nu">.02</span>, <span class="nu">.03</span>], <span class="cm"># FORMAL</span>
+  [<span class="nu">.03</span>, <span class="nu">.04</span>, <span class="nu">.03</span>, <span class="nu">.06</span>, <span class="nu">.04</span>, <span class="nu">.07</span>, <span class="nu">.06</span>, <span class="nu">.12</span>, <span class="nu">.03</span>, <span class="nu">.14</span>, <span class="nu">.12</span>, <span class="nu">.10</span>, <span class="nu">.04</span>, <span class="nu">.02</span>, <span class="nu">.04</span>, <span class="nu">.01</span>, <span class="nu">.05</span>], <span class="cm"># CASUAL</span>
+  [<span class="nu">.02</span>, <span class="nu">.06</span>, <span class="nu">.03</span>, <span class="nu">.08</span>, <span class="nu">.08</span>, <span class="nu">.03</span>, <span class="nu">.04</span>, <span class="nu">.02</span>, <span class="nu">.01</span>, <span class="nu">.01</span>, <span class="nu">.03</span>, <span class="nu">.01</span>, <span class="nu">.15</span>, <span class="nu">.14</span>, <span class="nu">.16</span>, <span class="nu">.01</span>, <span class="nu">.02</span>], <span class="cm"># TECHNICAL</span>
+  [<span class="nu">.05</span>, <span class="nu">.02</span>, <span class="nu">.02</span>, <span class="nu">.04</span>, <span class="nu">.03</span>, <span class="nu">.02</span>, <span class="nu">.02</span>, <span class="nu">.14</span>, <span class="nu">.18</span>, <span class="nu">.03</span>, <span class="nu">.05</span>, <span class="nu">.03</span>, <span class="nu">.01</span>, <span class="nu">.01</span>, <span class="nu">.02</span>, <span class="nu">.20</span>, <span class="nu">.13</span>], <span class="cm"># CLOSING</span>
+])
+
+<span class="kw">print</span>(<span class="st">"✅ B shape    :"</span>, B.shape, <span class="st">"(states × vocab)"</span>)
+<span class="kw">print</span>(<span class="st">"✅ Row sums B :"</span>, B.sum(axis=<span class="nu">1</span>).round(<span class="nu">2</span>))  <span class="cm"># should be [1. 1. 1. 1.]</span></pre></div>
+    <div class="output-section" id="emission-out" style="display:none">
+      <div class="section-label">Output</div>
+      <div class="result-output">✅ B shape    : (4, 17) (states × vocab)
+✅ Row sums B : [1. 1. 1. 1.]</div>
+      <div style="margin-top:12px">
+        <div class="section-label">Emission Matrix Heatmap — darker red = higher P(word | state)</div>
+        <div id="heatmap-wrap" style="overflow-x:auto;margin-top:7px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CELL 5: Forward Algorithm ════════════════════════════════════════ -->
+<div class="cell">
+  <div class="cell-header" onclick="toggleCell(this)">
+    <span class="cell-type">code [3]</span>
+    <span class="cell-title">⚡ Forward Algorithm — Core Implementation</span>
+    <button class="run-btn" onclick="runCell(event,'forward')">▶ Run</button>
+  </div>
+  <div class="cell-body">
+    <div class="code-block"><pre><span class="kw">def</span> <span class="fn">forward</span>(obs_words, pi, A, B, vocab):
+    <span class="st">"""
+    Run the HMM Forward Algorithm.
+    Args:
+        obs_words : list[str]  — observed word sequence
+        pi        : np.array   — initial state distribution
+        A         : np.array   — transition matrix (n_states × n_states)
+        B         : np.array   — emission matrix   (n_states × vocab_size)
+        vocab     : dict       — word → index mapping
+    Returns:
+        alpha     : np.array   — (T × n_states) forward variables
+    """</span>
+    obs = [vocab[w] <span class="kw">for</span> w <span class="kw">in</span> obs_words <span class="kw">if</span> w <span class="kw">in</span> vocab]
+    T, n = <span class="kw">len</span>(obs), <span class="kw">len</span>(pi)
+    alpha = np.zeros((T, n))
+
+    <span class="cm"># ── Step ①: Initialization ─────────────────────────────────────────</span>
+    alpha[<span class="nu">0</span>] = pi * B[:, obs[<span class="nu">0</span>]]
+    alpha[<span class="nu">0</span>] /= alpha[<span class="nu">0</span>].sum() + <span class="nu">1e-12</span>        <span class="cm"># normalize for stability</span>
+
+    <span class="cm"># ── Step ②: Recursion ──────────────────────────────────────────────</span>
+    <span class="kw">for</span> t <span class="kw">in</span> <span class="fn">range</span>(<span class="nu">1</span>, T):
+        <span class="kw">for</span> s <span class="kw">in</span> <span class="fn">range</span>(n):
+            <span class="cm"># sum over all previous states weighted by transition</span>
+            alpha[t, s] = np.dot(alpha[t<span class="op">-</span><span class="nu">1</span>], A[:, s]) * B[s, obs[t]]
+        alpha[t] /= alpha[t].sum() + <span class="nu">1e-12</span>    <span class="cm"># scale to prevent underflow</span>
+
+    <span class="kw">return</span> alpha   <span class="cm"># shape: (T, n_states)</span>
+
+
+<span class="kw">def</span> <span class="fn">predict_next</span>(obs_words, pi, A, B, vocab, top_k=<span class="nu">5</span>):
+    <span class="st">"""
+    Score all vocabulary words as next-word candidates using α_T.
+    Returns sorted list of (word, score) tuples.
+    """</span>
+    idx_to_word = {v: k <span class="kw">for</span> k, v <span class="kw">in</span> vocab.items()}
+    alpha = forward(obs_words, pi, A, B, vocab)
+    alpha_T = alpha[<span class="op">-</span><span class="nu">1</span>]      <span class="cm"># final state belief distribution</span>
+
+    scores = {}
+    <span class="kw">for</span> w_idx, w <span class="kw">in</span> idx_to_word.items():
+        score = <span class="nu">0.0</span>
+        <span class="kw">for</span> s <span class="kw">in</span> <span class="fn">range</span>(<span class="kw">len</span>(pi)):
+            <span class="cm"># probability of transitioning into state s from current belief</span>
+            p_next_state = np.dot(alpha_T, A[:, s])
+            score += p_next_state * B[s, w_idx]
+        scores[w] = score
+
+    <span class="kw">return</span> <span class="fn">sorted</span>(scores.items(), key=<span class="kw">lambda</span> x: x[<span class="nu">1</span>], reverse=<span class="op">True</span>)[:top_k]
+
+
+<span class="kw">print</span>(<span class="st">"✅ forward()       — computes α matrix (T × n_states)"</span>)
+<span class="kw">print</span>(<span class="st">"✅ predict_next()  — scores all vocab words as next-word candidates"</span>)</pre></div>
+    <div class="output-section" id="forward-out" style="display:none">
+      <div class="section-label">Output</div>
+      <div class="result-output">✅ forward()       — computes α matrix (T × n_states)
+✅ predict_next()  — scores all vocab words as next-word candidates</div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CELL 6: Email Use Case ═══════════════════════════════════════════ -->
+<div class="cell">
+  <div class="cell-header" onclick="toggleCell(this)">
+    <span class="cell-type">code [4]</span>
+    <span class="cell-title">📧 Use Case A — Email Writing Prediction</span>
+    <button class="run-btn" onclick="runCell(event,'email')">▶ Run</button>
+  </div>
+  <div class="cell-body">
+    <div class="code-block"><pre><span class="cm"># ── Email writing scenarios ─────────────────────────────────────────────</span>
+email_seqs = {
+  <span class="st">"formal_report_attach"</span>  : [<span class="st">"please"</span>, <span class="st">"find"</span>, <span class="st">"attached"</span>, <span class="st">"the"</span>],
+  <span class="st">"meeting_request"</span>       : [<span class="st">"please"</span>, <span class="st">"schedule"</span>, <span class="st">"the"</span>],
+  <span class="st">"casual_intro"</span>          : [<span class="st">"hey"</span>, <span class="st">"thanks"</span>],
+  <span class="st">"technical_bug_report"</span>  : [<span class="st">"the"</span>, <span class="st">"error"</span>, <span class="st">"data"</span>],
+  <span class="st">"closing_sign_off"</span>      : [<span class="st">"regards"</span>, <span class="st">"sincerely"</span>],
+}
+
+<span class="kw">for</span> name, words <span class="kw">in</span> email_seqs.items():
+    valid = [w <span class="kw">for</span> w <span class="kw">in</span> words <span class="kw">if</span> w <span class="kw">in</span> vocab]
+    <span class="kw">if</span> <span class="kw">not</span> valid: <span class="kw">continue</span>
+    preds = predict_next(valid, pi, A, B, vocab, top_k=<span class="nu">3</span>)
+    <span class="kw">print</span>(<span class="st">f"\n[{name}]"</span>)
+    <span class="kw">print</span>(<span class="st">f"  Input : '{' '.join(valid)} ___'"</span>)
+    <span class="kw">for</span> rank, (w, sc) <span class="kw">in</span> <span class="fn">enumerate</span>(preds, <span class="nu">1</span>):
+        bar = <span class="st">'█'</span> * <span class="fn">int</span>(sc * <span class="nu">300</span>)
+        <span class="kw">print</span>(<span class="st">f"  #{rank}    {w:12}  {sc:.5f}  {bar}"</span>)</pre></div>
+    <div class="output-section" id="email-out" style="display:none">
+      <div class="section-label">Output</div>
+      <div class="result-output" id="email-result-txt"></div>
+      <div id="email-alpha-vis" style="margin-top:14px"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CELL 7: Sentence Use Case ════════════════════════════════════════ -->
+<div class="cell">
+  <div class="cell-header" onclick="toggleCell(this)">
+    <span class="cell-type">code [5]</span>
+    <span class="cell-title">✏️ Use Case B — General Sentence Completion</span>
+    <button class="run-btn" onclick="runCell(event,'sentence')">▶ Run</button>
+  </div>
+  <div class="cell-body">
+    <div class="code-block"><pre><span class="cm"># ── General sentence completion scenarios ──────────────────────────────</span>
+sentence_seqs = {
+  <span class="st">"data_analysis_ctx"</span>    : [<span class="st">"the"</span>, <span class="st">"data"</span>, <span class="st">"error"</span>],
+  <span class="st">"casual_greeting"</span>      : [<span class="st">"hey"</span>, <span class="st">"sure"</span>],
+  <span class="st">"code_debug_ctx"</span>       : [<span class="st">"function"</span>, <span class="st">"error"</span>, <span class="st">"data"</span>],
+  <span class="st">"formal_closing_ctx"</span>   : [<span class="st">"regards"</span>, <span class="st">"sincerely"</span>, <span class="st">"best"</span>],
+  <span class="st">"report_ctx"</span>           : [<span class="st">"find"</span>, <span class="st">"the"</span>, <span class="st">"report"</span>],
+}
+
+<span class="kw">for</span> name, words <span class="kw">in</span> sentence_seqs.items():
+    valid = [w <span class="kw">for</span> w <span class="kw">in</span> words <span class="kw">if</span> w <span class="kw">in</span> vocab]
+    <span class="kw">if</span> <span class="kw">not</span> valid: <span class="kw">continue</span>
+    preds = predict_next(valid, pi, A, B, vocab, top_k=<span class="nu">3</span>)
+    <span class="kw">print</span>(<span class="st">f"\n[{name}]"</span>)
+    <span class="kw">print</span>(<span class="st">f"  Input : '{' '.join(valid)} ___'"</span>)
+    <span class="kw">for</span> rank, (w, sc) <span class="kw">in</span> <span class="fn">enumerate</span>(preds, <span class="nu">1</span>):
+        bar = <span class="st">'█'</span> * <span class="fn">int</span>(sc * <span class="nu">300</span>)
+        <span class="kw">print</span>(<span class="st">f"  #{rank}    {w:12}  {sc:.5f}  {bar}"</span>)</pre></div>
+    <div class="output-section" id="sentence-out" style="display:none">
+      <div class="section-label">Output</div>
+      <div class="result-output" id="sentence-result-txt"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CELL 8: Trellis Visualization ═══════════════════════════════════ -->
+<div class="cell">
+  <div class="cell-header" onclick="toggleCell(this)">
+    <span class="cell-type">code [6]</span>
+    <span class="cell-title">🕸️ Trellis Visualization — Step Through the Forward Pass</span>
+    <button class="run-btn" onclick="runCell(event,'trellis')">▶ Run</button>
+  </div>
+  <div class="cell-body">
+    <div class="code-block"><pre><span class="cm"># ── Visualise the forward trellis for a concrete sequence ─────────────</span>
+obs_seq = [<span class="st">"please"</span>, <span class="st">"find"</span>, <span class="st">"attached"</span>, <span class="st">"the"</span>]
+alpha_matrix = forward(obs_seq, pi, A, B, vocab)
+
+<span class="kw">print</span>(<span class="st">"Alpha matrix (rows=time, cols=states):"</span>)
+header = <span class="st">"  t  word         FORMAL     CASUAL     TECHNICAL  CLOSING"</span>
+<span class="kw">print</span>(header)
+<span class="kw">print</span>(<span class="st">"-"</span> * <span class="kw">len</span>(header))
+<span class="kw">for</span> t, (w, row) <span class="kw">in</span> <span class="fn">enumerate</span>(<span class="fn">zip</span>(obs_seq, alpha_matrix)):
+    vals = <span class="st">"   "</span>.join([<span class="st">f"{v:.5f}"</span> <span class="kw">for</span> v <span class="kw">in</span> row])
+    <span class="kw">print</span>(<span class="st">f"  {t}  {w:12}   {vals}"</span>)
+
+<span class="cm"># Predict next word</span>
+preds = predict_next(obs_seq, pi, A, B, vocab, top_k=<span class="nu">5</span>)
+<span class="kw">print</span>(<span class="st">f"\nNext word predictions for '{' '.join(obs_seq)} ___':"</span>)
+<span class="kw">for</span> r,(w,s) <span class="kw">in</span> <span class="fn">enumerate</span>(preds,<span class="nu">1</span>): <span class="kw">print</span>(<span class="st">f"  #{r}  {w:12} {s:.5f}"</span>)
+<span class="cm"># → Trellis rendered interactively below ↓</span></pre></div>
+    <div class="output-section" id="trellis-out" style="display:none">
+      <div class="section-label">Console Output</div>
+      <div class="result-output" id="trellis-alpha-txt" style="font-size:11px;overflow-x:auto;white-space:pre"></div>
+      <div style="margin-top:14px">
+        <div class="section-label">Interactive Forward Trellis — use arrow keys to step</div>
+        <div class="step-controls">
+          <button class="step-btn" onclick="trellisNav(-1)">◀ Prev step</button>
+          <span class="step-info" id="trellis-info">Step 1 of 4</span>
+          <button class="step-btn" onclick="trellisNav(1)">Next step ▶</button>
+        </div>
+        <div class="trellis-wrap">
+          <svg id="trellis-svg" width="100%" viewBox="0 0 680 290" style="display:block"></svg>
+        </div>
+        <div class="alpha-grid" id="alpha-bars" style="margin-top:14px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CELL 9: Interactive Demo ════════════════════════════════════════ -->
+<div class="cell">
+  <div class="cell-header" onclick="toggleCell(this)">
+    <span class="cell-type">code [7]</span>
+    <span class="cell-title">🎮 Interactive Demo — Build Your Own Sequence</span>
+    <button class="run-btn" onclick="runCell(event,'demo')">▶ Run</button>
+  </div>
+  <div class="cell-body">
+    <div class="code-block"><pre><span class="cm"># ── Try your own sequence — click tokens below then hit Predict ────────</span>
+user_input = <span class="st">"please find attached the"</span>   <span class="cm"># ← edit this!</span>
+words = user_input.lower().strip().split()
+valid = [w <span class="kw">for</span> w <span class="kw">in</span> words <span class="kw">if</span> w <span class="kw">in</span> vocab]
+preds = predict_next(valid, pi, A, B, vocab, top_k=<span class="nu">5</span>)
+
+<span class="kw">print</span>(<span class="st">f"Input   : '{' '.join(valid)} ___'"</span>)
+<span class="kw">print</span>(<span class="st">f"Results :"</span>)
+<span class="kw">for</span> rank, (w, sc) <span class="kw">in</span> <span class="fn">enumerate</span>(preds, <span class="nu">1</span>):
+    bar = <span class="st">'█'</span> * <span class="fn">int</span>(sc * <span class="nu">250</span>)
+    <span class="kw">print</span>(<span class="st">f"  #{rank}  {w:13}  score={sc:.5f}  {bar}"</span>)</pre></div>
+    <div class="output-section" id="demo-out" style="display:none">
+      <div class="interactive-demo">
+        <div class="demo-label">Click tokens to build your observation sequence</div>
+        <div class="token-row" id="token-selector"></div>
+        <div style="margin-top:10px;font-size:12px;color:var(--muted)">
+          Sequence: <span id="current-seq" style="color:var(--accent2);font-weight:500">— (select tokens above)</span>
+        </div>
+        <button class="run-all-btn" onclick="runPrediction()">⚡ Predict Next Word</button>
+        <div id="pred-result" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ CELL 10: Summary ═════════════════════════════════════════════════ -->
+<div class="cell">
+  <div class="cell-header" onclick="toggleCell(this)">
+    <span class="cell-type">markdown</span>
+    <span class="cell-title">📝 Summary &amp; Extensions</span>
+  </div>
+  <div class="cell-body md-cell">
+    <h2>What We Built</h2>
+    <p>A complete HMM-based next-word predictor that uses the Forward Algorithm to maintain a <em>belief distribution</em> over hidden states (email context) and uses it to score candidate next words. The model correctly predicts "report" after "please find attached the" and "data" after "function error".</p>
+    <h3>Extensions</h3>
+    <p><strong>Scale up:</strong> Replace the toy vocabulary with a real corpus. Train A and B using the Baum-Welch (EM) algorithm rather than hand-crafting them.</p>
+    <p><strong>Higher-order HMM:</strong> Condition transitions on the last k states (increases expressivity at the cost of exponential state space growth).</p>
+    <p><strong>Hybrid approach:</strong> Use HMM hidden states as context features fed into a neural language model — combining interpretable latent structure with deep learning expressiveness.</p>
+    <div class="math-box">
+Time complexity of Forward pass : O(T × N²) where T = sequence length, N = states<br>
+Space complexity                : O(T × N)  (can be reduced to O(N) if only final α_T needed)
+    </div>
+  </div>
+</div>
+
+</div><!-- /notebook -->
+
+<script>
+// ─── HMM parameters (JS mirror of Python) ─────────────────────────────
+const VOCAB=['please','find','attached','the','report','meeting','schedule','thanks','regards','hey','sure','cool','function','error','data','sincerely','best'];
+const STATES=['FORMAL_EMAIL','CASUAL_EMAIL','TECHNICAL','CLOSING'];
+const PI=[0.45,0.20,0.25,0.10];
+const A=[[.60,.10,.20,.10],[.15,.55,.15,.15],[.20,.10,.60,.10],[.10,.20,.10,.60]];
+const B=[
+  [.10,.10,.12,.10,.12,.10,.08,.05,.05,.01,.02,.01,.03,.03,.03,.02,.03],
+  [.03,.04,.03,.06,.04,.07,.06,.12,.03,.14,.12,.10,.04,.02,.04,.01,.05],
+  [.02,.06,.03,.08,.08,.03,.04,.02,.01,.01,.03,.01,.15,.14,.16,.01,.02],
+  [.05,.02,.02,.04,.03,.02,.02,.14,.18,.03,.05,.03,.01,.01,.02,.20,.13]
+];
+const COLORS=['#e94560','#16c79a','#7dcfff','#f5a623'];
+
+function fwd(obs){
+  const T=obs.length,n=4;
+  let a=Array.from({length:T},()=>new Array(n).fill(0));
+  for(let s=0;s<n;s++) a[0][s]=PI[s]*B[s][obs[0]];
+  let sm=a[0].reduce((x,y)=>x+y,0);
+  for(let s=0;s<n;s++) a[0][s]/=(sm||1);
+  for(let t=1;t<T;t++){
+    for(let s=0;s<n;s++){
+      let acc=0; for(let sp=0;sp<n;sp++) acc+=a[t-1][sp]*A[sp][s];
+      a[t][s]=acc*B[s][obs[t]];
+    }
+    let sm2=a[t].reduce((x,y)=>x+y,0);
+    for(let s=0;s<n;s++) a[t][s]/=(sm2||1);
+  }
+  return a;
+}
+
+function predictNext(words,topK=5){
+  const obs=words.map(w=>VOCAB.indexOf(w)).filter(x=>x>=0);
+  if(!obs.length) return [];
+  const alpha=fwd(obs), aT=alpha[alpha.length-1];
+  return VOCAB.map((w,wi)=>{
+    let sc=0;
+    for(let s=0;s<4;s++){
+      let nsp=0; for(let sp=0;sp<4;sp++) nsp+=aT[sp]*A[sp][s];
+      sc+=nsp*B[s][wi];
+    }
+    return {w,sc};
+  }).sort((a,b)=>b.sc-a.sc).slice(0,topK);
+}
+
+function toggleCell(hdr){
+  const b=hdr.nextElementSibling;
+  b.style.display=b.style.display==='none'?'':'none';
+}
+
+const done={};
+function runCell(e,id){
+  e.stopPropagation();
+  if(done[id]) return;
+  done[id]=true;
+  const el=document.getElementById(id+'-out');
+  if(el) el.style.display='block';
+  if(id==='emission') buildHeatmap();
+  if(id==='email') buildEmail();
+  if(id==='sentence') buildSentence();
+  if(id==='trellis') initTrellis();
+  if(id==='demo') buildDemo();
+}
+
+// ─── Heatmap ──────────────────────────────────────────────────────────
+function buildHeatmap(){
+  let h='<table class="prob-table"><tr><th>State \\ Word</th>';
+  VOCAB.forEach(w=>h+=`<th>${w}</th>`);
+  h+='</tr>';
+  B.forEach((row,si)=>{
+    const mx=Math.max(...row);
+    h+=`<tr><td style="color:${COLORS[si]};text-align:left;font-size:10px;white-space:nowrap">${STATES[si]}</td>`;
+    row.forEach(v=>{ h+=`<td style="background:rgba(233,69,96,${(v/mx)*0.65});font-size:10px">${v.toFixed(2)}</td>`; });
+    h+='</tr>';
+  });
+  h+='</table>';
+  document.getElementById('heatmap-wrap').innerHTML=h;
+}
+
+// ─── Email output ─────────────────────────────────────────────────────
+function buildEmail(){
+  const seqs=[
+    {n:'formal_report_attach',w:['please','find','attached','the']},
+    {n:'meeting_request',     w:['please','schedule','the']},
+    {n:'casual_intro',        w:['hey','thanks']},
+    {n:'technical_bug_report',w:['the','error','data']},
+    {n:'closing_sign_off',    w:['regards','sincerely']}
+  ];
+  let txt='';
+  seqs.forEach(({n,w})=>{
+    const valid=w.filter(x=>VOCAB.includes(x));
+    const preds=predictNext(valid,3);
+    txt+=`[${n}]\n  Input : '${valid.join(' ')} ___'\n`;
+    preds.forEach(({w:pw,sc},i)=>{
+      txt+=`  #${i+1}    ${pw.padEnd(13)} ${sc.toFixed(5)}  ${'█'.repeat(Math.round(sc*300))}\n`;
+    });
+    txt+='\n';
+  });
+  document.getElementById('email-result-txt').textContent=txt;
+  // State belief for first sequence
+  buildAlphaBars(['please','find','attached','the'],'email-alpha-vis',
+    'State belief α_T after "please find attached the"');
+}
+
+function buildAlphaBars(words, cid, label){
+  const obs=words.map(w=>VOCAB.indexOf(w)).filter(x=>x>=0);
+  if(!obs.length) return;
+  const alpha=fwd(obs), aT=alpha[alpha.length-1];
+  let html=`<div class="section-label">${label||'State belief α_T'}</div><div class="alpha-grid">`;
+  aT.forEach((v,si)=>{
+    const pct=Math.round(v*100);
+    html+=`<div class="alpha-row">
+      <span class="alpha-label" style="color:${COLORS[si]}">${STATES[si].replace('_EMAIL','').replace('_',' ')}</span>
+      <div class="alpha-bar-wrap">
+        <div class="alpha-bar" style="width:${Math.max(pct,1)}%;background:${COLORS[si]};color:#000;font-size:9px">${pct>9?pct+'%':''}</div>
+      </div>
+      <span class="alpha-val">${v.toFixed(4)}</span>
+    </div>`;
+  });
+  html+='</div>';
+  document.getElementById(cid).innerHTML=html;
+}
+
+// ─── Sentence output ──────────────────────────────────────────────────
+function buildSentence(){
+  const seqs=[
+    {n:'data_analysis_ctx',  w:['the','data','error']},
+    {n:'casual_greeting',    w:['hey','sure']},
+    {n:'code_debug_ctx',     w:['function','error','data']},
+    {n:'formal_closing_ctx', w:['regards','sincerely','best']},
+    {n:'report_ctx',         w:['find','the','report']}
+  ];
+  let txt='';
+  seqs.forEach(({n,w})=>{
+    const valid=w.filter(x=>VOCAB.includes(x));
+    const preds=predictNext(valid,3);
+    txt+=`[${n}]\n  Input : '${valid.join(' ')} ___'\n`;
+    preds.forEach(({w:pw,sc},i)=>{
+      txt+=`  #${i+1}    ${pw.padEnd(13)} ${sc.toFixed(5)}  ${'█'.repeat(Math.round(sc*300))}\n`;
+    });
+    txt+='\n';
+  });
+  document.getElementById('sentence-result-txt').textContent=txt;
+}
+
+// ─── Trellis ──────────────────────────────────────────────────────────
+const TWORDS=['please','find','attached','the'];
+const TOBS=TWORDS.map(w=>VOCAB.indexOf(w));
+const TALPHA=fwd(TOBS);
+let tStep=0;
+
+function initTrellis(){
+  // text output
+  let txt='Alpha matrix (rows=time, cols=states):\n';
+  txt+='  t  word           FORMAL     CASUAL   TECHNICAL   CLOSING\n';
+  txt+='-'.repeat(66)+'\n';
+  TALPHA.forEach((row,t)=>{
+    txt+=`  ${t}  ${TWORDS[t].padEnd(12)}   ${row.map(v=>v.toFixed(5)).join('   ')}\n`;
+  });
+  const preds=predictNext(TWORDS,5);
+  txt+=`\nNext-word predictions for '${TWORDS.join(' ')} ___':\n`;
+  preds.forEach(({w,sc},i)=>{ txt+=`  #${i+1}  ${w.padEnd(12)} ${sc.toFixed(5)}\n`; });
+  document.getElementById('trellis-alpha-txt').textContent=txt;
+  renderTrellis(0);
+  renderAlphaBars(0);
+}
+
+function trellisNav(d){
+  tStep=Math.max(0,Math.min(TWORDS.length-1,tStep+d));
+  renderTrellis(tStep);
+  renderAlphaBars(tStep);
+  document.getElementById('trellis-info').textContent=`Step ${tStep+1} of ${TWORDS.length}`;
+}
+
+function renderTrellis(upTo){
+  const T=TWORDS.length, n=4;
+  const cx=t=>60+t*155, cy=s=>40+s*58;
+  let m='';
+  // edges
+  for(let t=0;t<upTo;t++){
+    for(let sp=0;sp<n;sp++){
+      for(let s=0;s<n;s++){
+        const w=A[sp][s]*TALPHA[t][sp];
+        const op=Math.max(0.04,Math.min(0.7,w*5));
+        m+=`<line x1="${cx(t)}" y1="${cy(sp)}" x2="${cx(t+1)}" y2="${cy(s)}" stroke="#445" stroke-width="1.2" opacity="${op.toFixed(2)}" marker-end="url(#ta)"/>`;
+      }
+    }
+  }
+  // nodes
+  for(let t=0;t<T;t++){
+    const act=t<=upTo;
+    m+=`<text x="${cx(t)}" y="${cy(n)+10}" text-anchor="middle" fill="#666" font-size="11" font-family="monospace">${TWORDS[t]}</text>`;
+    for(let s=0;s<n;s++){
+      const v=TALPHA[t][s];
+      const r=9+Math.round(v*20);
+      m+=`<circle cx="${cx(t)}" cy="${cy(s)}" r="${r}" fill="${act?COLORS[s]:'#2a2a4a'}" opacity="${act?.9:.3}"/>`;
+      if(act) m+=`<text x="${cx(t)}" y="${cy(s)+4}" text-anchor="middle" fill="#000" font-size="9" font-family="monospace" font-weight="500">${v.toFixed(2)}</text>`;
+    }
+  }
+  // state labels
+  for(let s=0;s<n;s++){
+    m+=`<text x="4" y="${cy(s)+4}" fill="${COLORS[s]}" font-size="9" font-family="monospace">${STATES[s].replace('_EMAIL','').slice(0,7)}</text>`;
+  }
+  document.getElementById('trellis-svg').innerHTML=
+    `<defs><marker id="ta" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="4" markerHeight="4" orient="auto-start-reverse"><path d="M2 1L8 5L2 9" fill="none" stroke="#666" stroke-width="1.5"/></marker></defs>`+m;
+}
+
+function renderAlphaBars(t){
+  const aT=TALPHA[t];
+  let h=`<div class="section-label">α at t=${t} — word "${TWORDS[t]}" — state beliefs</div>`;
+  aT.forEach((v,si)=>{
+    const pct=Math.round(v*100);
+    h+=`<div class="alpha-row">
+      <span class="alpha-label" style="color:${COLORS[si]};font-size:10px">${STATES[si].replace('_EMAIL','').replace('_',' ')}</span>
+      <div class="alpha-bar-wrap">
+        <div class="alpha-bar" style="width:${Math.max(pct,1)}%;background:${COLORS[si]};color:#000;font-size:9px">${pct>9?pct+'%':''}</div>
+      </div>
+      <span class="alpha-val">${v.toFixed(4)}</span>
+    </div>`;
+  });
+  document.getElementById('alpha-bars').innerHTML=h;
+}
+
+// ─── Interactive Demo ─────────────────────────────────────────────────
+let selTokens=[];
+function buildDemo(){
+  const row=document.getElementById('token-selector');
+  VOCAB.forEach(w=>{
+    const t=document.createElement('span');
+    t.className='token'; t.textContent=w;
+    t.onclick=()=>{
+      if(selTokens.includes(w)){
+        selTokens=selTokens.filter(x=>x!==w); t.classList.remove('active');
+      } else { selTokens.push(w); t.classList.add('active'); }
+      document.getElementById('current-seq').textContent=
+        selTokens.length ? selTokens.join(' ')+'  ___' : '— (select tokens above)';
+    };
+    row.appendChild(t);
+  });
+}
+
+function runPrediction(){
+  if(!selTokens.length){
+    document.getElementById('pred-result').innerHTML=
+      '<div style="color:var(--muted);font-size:12px">Select at least one token first.</div>';
+    return;
+  }
+  const preds=predictNext(selTokens,5);
+  const classes=['top1','top2','top3','',''];
+  let h=`<div class="section-label">Top predictions for "${selTokens.join(' ')} ___"</div><div class="pred-bar">`;
+  preds.forEach(({w,sc},i)=>{
+    h+=`<span class="pred-pill ${classes[i]}" title="${sc.toFixed(5)}">#${i+1} ${w} <span style="font-size:10px;opacity:.7">${(sc*100).toFixed(1)}%</span></span>`;
+  });
+  h+='</div>';
+  // alpha bars
+  const obs=selTokens.map(w=>VOCAB.indexOf(w)).filter(x=>x>=0);
+  if(obs.length){
+    const alpha=fwd(obs), aT=alpha[alpha.length-1];
+    h+=`<div class="alpha-grid" style="margin-top:12px"><div class="section-label">State belief α_T (which hidden context dominates)</div>`;
+    aT.forEach((v,si)=>{
+      const pct=Math.round(v*100);
+      h+=`<div class="alpha-row">
+        <span class="alpha-label" style="color:${COLORS[si]};font-size:10px">${STATES[si].replace('_EMAIL','').replace('_',' ')}</span>
+        <div class="alpha-bar-wrap">
+          <div class="alpha-bar" style="width:${Math.max(pct,1)}%;background:${COLORS[si]};color:#000;font-size:9px">${pct>9?pct+'%':''}</div>
+        </div>
+        <span class="alpha-val">${v.toFixed(4)}</span>
+      </div>`;
+    });
+    h+='</div>';
+  }
+  document.getElementById('pred-result').innerHTML=h;
+}
+</script>
+</body>
+</html>
